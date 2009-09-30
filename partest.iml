@@ -13,13 +13,9 @@
     <content url="file://$MODULE_DIR$/test" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="compiler" />
-    <orderEntry type="module" module-name="dbc" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="manual" />
     <orderEntry type="module" module-name="scalap" />
-    <orderEntry type="module" module-name="swing" />
     <orderEntry type="library" name="Project ant library" level="project" />
     <orderEntry type="library" name="Project Scala SDK" level="project" />
     <orderEntry type="library" name="ant" level="application" />

@@ -1156,6 +1156,245 @@
               <file url="file://$PROJECT_DIR$/src/scalap/scala/tools/scalap/scalax/rules/scalasig/ScalaSigPrinter.scala" />
             </files>
           </module>
+          <module name="actors">
+            <files>
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/AbstractActor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/AbstractReactor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Actor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ActorGC.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ActorProxy.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ActorTask.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Channel.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/DaemonActor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Debug.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/FJTaskScheduler2.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Future.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/IScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/InputChannel.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/LightReaction.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/MessageQueue.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/OutputChannel.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Reaction.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Reactor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ReactorTask.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ReplyReactor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Replyable.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ReplyableActor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/ReplyableReactor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/Scheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/SchedulerAdapter.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/SingleThreadedScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/package.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/FreshNameCreator.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/JavaSerializer.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/NetKernel.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/Proxy.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/RemoteActor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/Serializer.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/Service.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/remote/TcpService.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/DaemonScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/DefaultThreadPoolScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/DelegatingScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/DrainableForkJoinPool.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/ExecutorScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/ForkJoinScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/SchedulerService.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/SimpleExecutorScheduler.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/TerminationMonitor.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/TerminationService.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/ThreadPoolConfig.scala" />
+              <file url="file://$PROJECT_DIR$/src/actors/scala/actors/scheduler/ThreadPoolScheduler.scala" />
+            </files>
+          </module>
+          <module name="dbc">
+            <files>
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/DataType.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/Database.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/Syntax.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/Utilities.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/Value.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/Vendor.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/ApproximateNumeric.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/Boolean.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/Character.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/CharacterLargeObject.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/CharacterString.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/CharacterVarying.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/ExactNumeric.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/Factory.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/Numeric.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/String.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/datatype/Unknown.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/exception/IncompatibleSchema.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/exception/UnsupportedFeature.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/result/Field.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/result/FieldMetadata.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/result/Relation.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/result/Status.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/result/Tuple.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/AccessMode.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/DerivedColumn.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Expression.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Insert.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/InsertionData.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/IsolationLevel.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/JoinType.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Jointure.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Relation.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Select.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/SetClause.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/SetQuantifier.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Statement.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Status.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Table.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Transaction.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/Update.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/Aggregate.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/BinaryOperator.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/Constant.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/Default.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/Field.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/FunctionCall.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/Select.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/SetFunction.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/TypeCast.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/statement/expression/UnaryOperator.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/syntax/DataTypeUtil.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/syntax/Database.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/syntax/Statement.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/syntax/StatementExpression.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/ApproximateNumeric.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/Boolean.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/Character.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/CharacterLargeObject.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/CharacterVarying.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/Conversion.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/ExactNumeric.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/Factory.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/value/Unknown.scala" />
+              <file url="file://$PROJECT_DIR$/src/dbc/scala/dbc/vendor/PostgreSQL.scala" />
+            </files>
+          </module>
+          <module name="manual">
+            <files>
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/Command.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/fsc.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/sbaz.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/scala.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/scalac.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/scaladoc.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/man1/scalap.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/tools/docutil/EmitHtml.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/tools/docutil/EmitManPage.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/tools/docutil/ManMaker.scala" />
+              <file url="file://$PROJECT_DIR$/src/manual/scala/tools/docutil/ManPage.scala" />
+            </files>
+          </module>
+          <module name="swing">
+            <files>
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/AbstractButton.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Action.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Adjustable.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Alignment.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Applet.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/BorderPanel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/BoxPanel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/BufferWrapper.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Button.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ButtonGroup.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/CheckBox.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ComboBox.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Component.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Container.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/EditorPane.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/FileChooser.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/FlowPanel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/FormattedTextField.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/GUIApplication.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/GridBagPanel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/GridPanel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Label.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/LayoutContainer.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ListView.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/MainFrame.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Menu.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Orientable.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Orientation.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Oriented.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Panel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/PasswordField.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ProgressBar.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Publisher.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/RadioButton.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Reactions.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Reactor.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/RichWindows.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/RootPanel.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ScrollBar.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ScrollPane.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Scrollable.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Separator.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/SequentialContainer.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/SimpleGUIApplication.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Slider.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/SplitPane.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Swing.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/SwingActor.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/TabbedPane.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Table.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/TextArea.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/TextComponent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/TextField.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/ToggleButton.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/UIElement.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/Window.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ActionEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/AdjustingEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/BackgroundChanged.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ButtonClicked.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/CaretUpdate.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ComponentEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ContainerEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/EditDone.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/Event.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/FocusEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/FontChanged.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ForegroundChanged.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/InputEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/Key.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/KeyEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ListEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/MouseEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/SelectionEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/TableEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/UIEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/ValueChanged.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowActivated.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowClosed.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowClosing.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowDeactivated.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowDeiconified.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowEvent.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowIconified.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/event/WindowOpened.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/model/Matrix.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/ButtonApp.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/CelsiusConverter.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/CelsiusConverter2.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/ComboBoxes.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/CountButton.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/Dialogs.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/GridBagDemo.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/HelloWorld.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/LabelTest.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/LinePainting.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/SimpleApplet.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/SwingApp.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/TableSelection.scala" />
+              <file url="file://$PROJECT_DIR$/src/swing/scala/swing/test/UIDemo.scala" />
+            </files>
+          </module>
         </modules>
       </facet-type>
     </autodetection-disabled>
@@ -1337,6 +1576,7 @@
   </component>
   <component name="ProjectDictionaryState">
     <dictionary name="odersky" />
+    <dictionary name="dragos" />
   </component>
   <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
@@ -1344,14 +1584,10 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/dbc.iml" filepath="$PROJECT_DIR$/dbc.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
-      <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
       <module fileurl="file://$PROJECT_DIR$/partest.iml" filepath="$PROJECT_DIR$/partest.iml" />
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
-      <module fileurl="file://$PROJECT_DIR$/swing.iml" filepath="$PROJECT_DIR$/swing.iml" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_5" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
@@ -1491,7 +1727,13 @@
     <option name="mySupportsUserInfoFilter" value="true" />
   </component>
   <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="svn" />
+    <mapping directory="$PROJECT_DIR$/src/actors" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/dbc" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/manual" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/partest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/scalap" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/swing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/test" vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
@@ -1515,6 +1757,13 @@
         <root url="jar://$PROJECT_DIR$/lib/ScalaCheck.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/scala-library-src.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Locker Lib">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/build/locker/classes/library" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
