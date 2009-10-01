@@ -1727,13 +1727,7 @@
     <option name="mySupportsUserInfoFilter" value="true" />
   </component>
   <component name="VcsDirectoryMappings">
-    <mapping directory="$PROJECT_DIR$/src/actors" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/dbc" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/manual" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/partest" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/scalap" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/swing" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/test" vcs="Git" />
+    <mapping directory="" vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
