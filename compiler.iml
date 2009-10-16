@@ -5,14 +5,16 @@
       <configuration />
     </facet>
   </component>
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/build/quick/classes/compiler" />
+    <output-test url="file://$MODULE_DIR$/out/test/compiler" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/src/compiler">
       <sourceFolder url="file://$MODULE_DIR$/src/compiler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="library" />
+    <orderEntry type="library" name="Scala SDK" level="application" />
     <orderEntry type="library" name="Project ant library" level="project" />
     <orderEntry type="library" name="Project Scala SDK" level="project" />
     <orderEntry type="library" name="ant" level="application" />

@@ -145,7 +145,7 @@ object Numeric {
   object BigDecimalAsIfIntegral extends BigDecimalAsIfIntegral with Ordering.BigDecimalOrdering
 }
 
-trait Numeric[T] extends Ordering[T] {
+trait Numeric[@specialized T] extends Ordering[T] {
   def plus(x: T, y: T): T
   def minus(x: T, y: T): T
   def times(x: T, y: T): T
