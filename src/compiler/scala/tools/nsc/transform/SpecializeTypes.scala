@@ -650,10 +650,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val opc = new overridingPairs.Cursor(clazz)
     val oms = new mutable.ListBuffer[Symbol]
     while (opc.hasNext) {
-//       log("\toverriding pairs: " + opc.overridden.fullNameString + ": " + opc.overridden.info
-//               + "> " + opc.overriding.fullNameString + ": " + opc.overriding.info)
+       log("\toverriding pairs: " + opc.overridden.fullNameString + ": " + opc.overridden.info
+               + "> " + opc.overriding.fullNameString + ": " + opc.overriding.info)
       if (!specializedTypeVars(opc.overridden.info).isEmpty) {
-//        log("\t\tspecializedTVars: " + specializedTypeVars(opc.overridden.info))
+        log("\t\tspecializedTVars: " + specializedTypeVars(opc.overridden.info))
         val env = unify(opc.overridden.info, opc.overriding.info, emptyEnv)
         log("\t\tenv: " + env)
         if (!env.isEmpty 
