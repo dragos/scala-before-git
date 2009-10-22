@@ -729,7 +729,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Apply type bindings in the given environement `env' to all declarations.  */
   private def subst(env: TypeEnv, decls: List[Symbol]): List[Symbol] =
     decls map subst(env)
-  
+
+  /** Apply the type environment 'env' to the given type. All type
+   *  bindings are supposed to be to primitive types. A type variable
+   *  that is annotated with 'uncheckedVariance' is mapped to the corresponding
+   *  primitive type losing the annotation. 
+   */
   private def subst(env: TypeEnv, tpe: Type): Type = {
     class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) {
 
@@ -739,10 +744,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val decls1 = mapOver(decls.toList);
           if ((parents1 eq parents) && (decls1 eq decls)) tp
           else ClassInfoType(parents1, newScope(decls1), clazz)
-        case AnnotatedType(annots, underlying, self) =>
-//          if (annots.exists(_.atp == definitions.uncheckedVarianceClass.tpe))
-          println("found " + tp)
-          AnnotatedType(annots.filter(_.atp != definitions.uncheckedVarianceClass.tpe), underlying, self)
+        case AnnotatedType(annots, atp, selfsym) =>
+          val annots1 = mapOverAnnotations(annots)
+          val atp1 = this(atp)
+          if ((annots1 eq annots) && (atp1 eq atp)) tp
+          else if (annots1.isEmpty) atp1
+          else if (atp1 ne atp) {
+            val annots2 = annots1.filter(_.atp.typeSymbol != definitions.uncheckedVarianceClass)
+            if (annots2.isEmpty) atp1
+            else AnnotatedType(annots2, atp1, selfsym)
+          } else
+            AnnotatedType(annots1, atp1, selfsym)
+
         case _ => super.mapOver(tp)
       }
     }
