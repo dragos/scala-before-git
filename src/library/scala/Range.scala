@@ -36,7 +36,7 @@ import util.Hashable
  *  @version 2.8
  */
 @experimental
-abstract class GenericRange[@specialized T]
+abstract class GenericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
   (implicit num: Integral[T])
 extends VectorView[T, collection.immutable.Vector[T]] with RangeToString[T] with Hashable {
