@@ -741,7 +741,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           else ClassInfoType(parents1, newScope(decls1), clazz)
         case AnnotatedType(annots, underlying, self) =>
 //          if (annots.exists(_.atp == definitions.uncheckedVarianceClass.tpe))
-          println("found " + totp)
+          println("found " + tp)
           AnnotatedType(annots.filter(_.atp != definitions.uncheckedVarianceClass.tpe), underlying, self)
         case _ => super.mapOver(tp)
       }
