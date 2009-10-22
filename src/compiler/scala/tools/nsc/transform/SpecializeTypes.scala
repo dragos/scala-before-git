@@ -236,6 +236,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   lazy val primitiveTypes = Map(
+    "Unit"    -> definitions.UnitClass.tpe,
     "Boolean" -> definitions.BooleanClass.tpe,
     "Byte"    -> definitions.ByteClass.tpe,
     "Short"   -> definitions.ShortClass.tpe,
@@ -527,7 +528,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           typeEnv(specClass) = fullEnv
           specClass.name = specializedName(specClass, fullEnv)
           enterMember(specClass)
-          println("entered specialized class with info " + specClass.fullNameString + ": " + specClass.info)
+          log("entered specialized class with info " + specClass.fullNameString + ": " + specClass.info)
           info(specClass) = SpecializedInnerClass(m, fullEnv)
         }
       }
@@ -651,11 +652,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val oms = new mutable.ListBuffer[Symbol]
     while (opc.hasNext) {
        log("\toverriding pairs: " + opc.overridden.fullNameString + ": " + opc.overridden.info
-               + "> " + opc.overriding.fullNameString + ": " + opc.overriding.info)
-      if (!specializedTypeVars(opc.overridden.info).isEmpty) {
+               + " overriden by " + opc.overriding.fullNameString + ": " + opc.overriding.info)
+      if (opc.overriding.owner == clazz && !specializedTypeVars(opc.overridden.info).isEmpty) {
         log("\t\tspecializedTVars: " + specializedTypeVars(opc.overridden.info))
         val env = unify(opc.overridden.info, opc.overriding.info, emptyEnv)
-        log("\t\tenv: " + env)
+        log("\t\tenv: " + env + "isValid: "
+                + TypeEnv.isValid(env, opc.overridden)
+                + " exists: " + opc.overridden.owner.info.decl(specializedName(opc.overridden, env)))
         if (!env.isEmpty 
             && TypeEnv.isValid(env, opc.overridden)
             && opc.overridden.owner.info.decl(specializedName(opc.overridden, env)) != NoSymbol) {
@@ -729,12 +732,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   
   private def subst(env: TypeEnv, tpe: Type): Type = {
     class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) {
+
       override def mapOver(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, clazz) =>
           val parents1 = parents mapConserve (this);
           val decls1 = mapOver(decls.toList);
           if ((parents1 eq parents) && (decls1 eq decls)) tp
           else ClassInfoType(parents1, newScope(decls1), clazz)
+        case AnnotatedType(annots, underlying, self) =>
+//          if (annots.exists(_.atp == definitions.uncheckedVarianceClass.tpe))
+          println("found " + totp)
+          AnnotatedType(annots.filter(_.atp != definitions.uncheckedVarianceClass.tpe), underlying, self)
         case _ => super.mapOver(tp)
       }
     }
@@ -912,8 +920,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case None => super.transform(tree)
           }
 
-        case Select(qual, name) if (!symbol.isMethod 
-                                    && !specializedTypeVars(symbol.info).isEmpty 
+        case Select(qual, name) if (/*!symbol.isMethod
+                                    &&*/ !specializedTypeVars(symbol.info).isEmpty 
                                     && name != nme.CONSTRUCTOR) =>
           val qual1 = transform(qual)
           log("checking for unification at " + tree + " with sym.tpe: " + symbol.tpe + " and tree.tpe: " + tree.tpe + " at " + tree.pos.line)
@@ -1244,7 +1252,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Cast `tree' to 'pt', unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeCastTo(pt: Type, tpe: Type, tree: Tree): Tree = 
     if ((pt == definitions.UnitClass.tpe) || (tpe <:< pt)) {
-      //log("no need to cast from " + tpe + " to " + pt)
+      log("no need to cast from " + tpe + " to " + pt)
       tree
     } else
       gen.mkAsInstanceOf(tree, pt)
