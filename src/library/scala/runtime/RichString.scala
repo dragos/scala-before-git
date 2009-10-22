@@ -13,15 +13,23 @@ package scala.runtime
 
 import scala.util.matching.Regex
 import collection.generic._
-import collection.VectorLike
-import collection.immutable.Vector
+import collection.IndexedSeqLike
+import collection.immutable.IndexedSeq
 import collection.mutable.{Builder, StringBuilder}
 
 object RichString {
 
   def newBuilder: Builder[Char, RichString] = new StringBuilder() mapResult (new RichString(_))
-  implicit def builderFactory: BuilderFactory[Char, RichString, RichString] = new BuilderFactory[Char, RichString, RichString] { def apply(from: RichString) = newBuilder }
-  implicit def builderFactory2: BuilderFactory[Char, RichString, String] = new BuilderFactory[Char, RichString, String] { def apply(from: String) = newBuilder }
+  implicit def canBuildFrom: CanBuildFrom[RichString, Char, RichString] = 
+    new CanBuildFrom[RichString, Char, RichString] { 
+      def apply(from: RichString) = newBuilder 
+      def apply() = newBuilder 
+    }
+  implicit def canBuildFrom2: CanBuildFrom[String, Char, RichString] = 
+    new CanBuildFrom[String, Char, RichString] { 
+      def apply(from: String) = newBuilder 
+      def apply() = newBuilder 
+    }
 
   // just statics for rich string.
   private final val LF: Char = 0x0A
@@ -32,7 +40,7 @@ object RichString {
 
 import RichString._
 
-class RichString(val self: String) extends Proxy with Vector[Char] with VectorLike[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] with Boxed {
+class RichString(val self: String) extends Proxy with IndexedSeq[Char] with IndexedSeqLike[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] with Boxed {
 
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = RichString.newBuilder

@@ -23,9 +23,9 @@ import generic._
  *  @since   2.8
  */
 class GenericArray[A](override val length: Int)
-extends Vector[A] 
+extends IndexedSeq[A] 
    with GenericTraversableTemplate[A, GenericArray]
-   with VectorLike[A, GenericArray[A]] { 
+   with IndexedSeqLike[A, GenericArray[A]] { 
 
   override def companion: GenericCompanion[GenericArray] = GenericArray
 
@@ -68,7 +68,7 @@ extends Vector[A]
 }
 
 object GenericArray extends SeqFactory[GenericArray] {
-  implicit def builderFactory[A]: BuilderFactory[A, GenericArray[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenericArray[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, GenericArray[A]] = 
     new ArrayBuffer[A] mapResult { buf => 
       val result = new GenericArray[A](buf.length)

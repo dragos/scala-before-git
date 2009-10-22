@@ -615,7 +615,7 @@ abstract class ClassfileParser {
                       }
                       val newtparam = sym.newExistential(sym.pos, "?"+i) setInfo bounds
                       existentials += newtparam
-                      xs += newtparam.tpe
+                      xs += newtparam.tpe //@M should probably be .tpeHK
                       i += 1
                     case _ => 
                       xs += sig2type(tparams, skiptvs)
@@ -1025,7 +1025,13 @@ abstract class ClassfileParser {
               if (entry.outerName.endsWith("$")) entry.outerName.subName(0, entry.outerName.length - 1)
               else entry.outerName
             val sym = classSymbol(outerName)
-            val s = atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
+            val s = 
+              // if loading during initialization of `definitions' typerPhase is not yet set.
+              // in that case we simply load the mmeber at the current phase
+              if (currentRun.typerPhase != null)
+                atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
+              else 
+                getMember(sym, innerName.toTypeName)
             assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
             s
 
@@ -1105,7 +1111,10 @@ abstract class ClassfileParser {
 
   private def setPrivateWithin(sym: Symbol, jflags: Int) {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
-      sym.privateWithin = sym.toplevelClass.owner
+      // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
+      // apparently occurs when processing v45.3 bytecode.
+      if (sym.toplevelClass != NoSymbol)
+        sym.privateWithin = sym.toplevelClass.owner
   }
   
   @inline final private def isPrivate(flags: Int) =

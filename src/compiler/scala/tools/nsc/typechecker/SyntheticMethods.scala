@@ -204,8 +204,6 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def hasSerializableAnnotation(clazz: Symbol) =
       clazz hasAnnotation SerializableAttr
-    def isPublic(sym: Symbol) =
-      !sym.hasFlag(PRIVATE | PROTECTED) && sym.privateWithin == NoSymbol
 
     def readResolveMethod: Tree = {
       // !!! the synthetic method "readResolve" should be private, but then it is renamed !!!
@@ -228,16 +226,19 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     if (!phase.erasedTypes) try {
       if (clazz hasFlag Flags.CASE) {
-        val isTop = !(clazz.info.baseClasses.tail exists (_ hasFlag Flags.CASE))
+        val isTop = !(clazz.ancestors exists (_ hasFlag Flags.CASE))
         // case classes are implicitly declared serializable
         clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
 
         if (isTop) {
-          for (stat <- templ.body) {
-            if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
-              ts += newAccessorMethod(stat)
-              stat.symbol resetFlag CASEACCESSOR
-            }
+          // If this case class has fields with less than public visibility, their getter at this
+          // point also has those permissions.  In that case we create a new, public accessor method
+          // with a new name and remove the CASEACCESSOR flag from the existing getter.  This complicates
+          // the retrieval of the case field accessors (see def caseFieldAccessors in Symbols.)
+          def needsService(s: Symbol) = s.isMethod && (s hasFlag CASEACCESSOR) && !s.isPublic
+          for (stat <- templ.body ; if stat.isDef && needsService(stat.symbol)) {
+            ts += newAccessorMethod(stat)
+            stat.symbol resetFlag CASEACCESSOR
           }
         }
         

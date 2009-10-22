@@ -32,7 +32,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
                                   with LinearSeqLike[A, List[A]] {
   override def companion: GenericCompanion[List] = List
 
-  import scala.collection.{Iterable, Traversable, Seq, Vector}
+  import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.
@@ -147,7 +147,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
   /** Create a new list which contains all elements of this list
    *  followed by all elements of Traversable `that'
    */
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, List[A]]): That = {
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     val b = bf(this)
     if (b.isInstanceOf[ListBuffer[_]]) (this ::: that.toList).asInstanceOf[That]
     else super.++(that)
@@ -156,7 +156,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
   /** Create a new list which contains all elements of this list
    *  followed by all elements of Iterator `that'
    */
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, List[A]]): That =
+  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[List[A], B, That]): That =
     this ++ that.toList
 
   /** Overrides the method in Iterable for efficiency.
@@ -500,9 +500,9 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
  */
 object List extends SeqFactory[List] {
   
-  import scala.collection.{Iterable, Seq, Vector}
+  import scala.collection.{Iterable, Seq, IndexedSeq}
 
-  implicit def builderFactory[A]: BuilderFactory[A, List[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
   override def empty[A]: List[A] = Nil

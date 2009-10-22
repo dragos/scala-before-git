@@ -721,7 +721,10 @@ trait Symbols {
     private[Symbols] var infos: TypeHistory = null
 
     /** Get type. The type of a symbol is:
-     *  for a type symbol, the type corresponding to the symbol itself
+     *  for a type symbol, the type corresponding to the symbol itself, 
+     *    @M you should use tpeHK for a type symbol with type parameters if
+     *       the kind of the type need not be *, as tpe introduces dummy arguments
+     *       to generate a type of kind *
      *  for a term symbol, its usual type
      */
     def tpe: Type = info
@@ -879,6 +882,13 @@ trait Symbols {
     def typeConstructor: Type =
       throw new Error("typeConstructor inapplicable for " + this)
 
+    /** @M -- tpe vs tpeHK:
+     * Symbol::tpe creates a TypeRef that has dummy type arguments to get a type of kind *
+     * Symbol::tpeHK creates a TypeRef without type arguments, but with type params --> higher-kinded if non-empty list of tpars
+     * calling tpe may hide errors or introduce spurious ones 
+     *   (e.g., when deriving a type from the symbol of a type argument that must be higher-kinded)
+     * as far as I can tell, it only makes sense to call tpe in conjunction with a substitution that replaces the generated dummy type arguments by their actual types 
+     */
     def tpeHK = if (isType) typeConstructor else tpe // @M! used in memberType
 
     /** The type parameters of this symbol, without ensuring type completion.
@@ -1078,10 +1088,38 @@ trait Symbols {
      */
     def thisType: Type = NoPrefix
 
-    /** Return every accessor of a primary constructor parameter in this case class
+    /** Return every accessor of a primary constructor parameter in this case class.
+     *  The scope declarations may be out of order because fields with less than private
+     *  access are first given a regular getter, then a new renamed getter which comes
+     *  later in the declaration list.  For this reason we have to pinpoint the
+     *  right accessors by starting with the original fields (which will be in the right
+     *  order) and looking for getters with applicable names.  The getters may have the
+     *  standard name "foo" or may have been renamed to "foo$\d+" in SyntheticMethods.
+     *  See ticket #1373.
      */
-    final def caseFieldAccessors: List[Symbol] =
-      info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(CASEACCESSOR))
+    final def caseFieldAccessors: List[Symbol] = {
+      val allWithFlag = info.decls.toList filter (_ hasFlag CASEACCESSOR)
+      val (accessors, fields) = allWithFlag partition (_.isMethod)
+      
+      def findAccessor(field: Symbol): Symbol = {
+        // There is another renaming the field may have undergone, for instance as in
+        // ticket #2175: case class Property[T](private var t: T), t becomes Property$$t.
+        // So we use the original name everywhere.
+        val getterName    = nme.getterName(field.originalName)
+        
+        // Note this is done in two passes intentionally, to ensure we pick up the original
+        // getter if present before looking for the renamed getter.
+        def origGetter    = accessors find (_.originalName == getterName)
+        def renamedGetter = accessors find (_.originalName startsWith (getterName + "$"))
+        val accessorName  = origGetter orElse renamedGetter
+        
+        accessorName getOrElse {
+          throw new Error("Could not find case accessor for %s in %s".format(field, this))
+        }
+      }
+      
+      fields map findAccessor
+    }
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR))
@@ -1117,7 +1155,7 @@ trait Symbols {
     def defaultGetter_=(getter: Symbol): Unit =
       throw new Error("defaultGetter cannot be set for " + this)
     
-    /** For a lazy value, it's lazy accessor. NoSymbol for all others */
+    /** For a lazy value, its lazy accessor. NoSymbol for all others */
     def lazyAccessor: Symbol = NoSymbol
 
     /** For an outer accessor: The class from which the outer originates.
@@ -1134,8 +1172,12 @@ trait Symbols {
      */
     def mixinClasses: List[Symbol] = {
       val sc = superClass
-      info.baseClasses.tail.takeWhile(sc ne)
+      ancestors takeWhile (sc ne)
     }
+    
+    /** All directly or indirectly inherited classes.
+     */
+    def ancestors: List[Symbol] = info.baseClasses drop 1
 
     /** The package containing this symbol, or NoSymbol if there
      *  is not one. */
@@ -1269,18 +1311,15 @@ trait Symbols {
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
 
     final def allOverriddenSymbols: List[Symbol] =
-      if (owner.isClass && !owner.info.baseClasses.isEmpty)
-        for { bc <- owner.info.baseClasses.tail
-              val s = overriddenSymbol(bc)
-              if s != NoSymbol } yield s
-      else List()
+      if (!owner.isClass) Nil
+      else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
     /** The virtual classes overridden by this virtual class (excluding `clazz' itself)
      *  Classes appear in linearization order (with superclasses before subclasses)
      */
     final def overriddenVirtuals: List[Symbol] = 
       if (isVirtualTrait && hasFlag(OVERRIDE))
-        this.owner.info.baseClasses.tail 
+        this.owner.ancestors 
           .map(_.info.decl(name)) 
           .filter(_.isVirtualTrait)
           .reverse
@@ -1585,15 +1624,17 @@ trait Symbols {
       clone
     }
 
+    private val validAliasFlags = SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED
+    
     override def alias: Symbol =
-      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED)) initialize.referenced
+      if (hasFlag(validAliasFlags)) initialize.referenced
       else NoSymbol
 
     def setAlias(alias: Symbol): TermSymbol = {
       assert(alias != NoSymbol, this)
       assert(!(alias hasFlag OVERLOADED), alias)
 
-      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED), this)
+      assert(hasFlag(validAliasFlags), this)
       referenced = alias
       this
     }
@@ -1642,7 +1683,7 @@ trait Symbols {
       if (phase.flatClasses && !hasFlag(METHOD) &&
           rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          assert(rawowner.isClass)
+          assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname, rawowner))
           flatname = newTermName(compactify(rawowner.name.toString() + "$" + rawname))
         }
         flatname
@@ -1807,7 +1848,7 @@ trait Symbols {
         newTypeName(rawname+"$trait") // (part of DEVIRTUALIZE)
       } else if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          assert(rawowner.isClass)
+          assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname, rawowner))
           flatname = newTypeName(compactify(rawowner.name.toString() + "$" + rawname))
         }
         flatname

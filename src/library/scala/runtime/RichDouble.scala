@@ -11,6 +11,7 @@
 
 package scala.runtime
 
+import scala.collection.immutable.GenericRange
 
 final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   // Proxy.self
@@ -25,22 +26,22 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def round: Long = Math.round(x)
   def ceil: Double = Math.ceil(x)
   def floor: Double = Math.floor(x)
-  
+
   /** See <code>BigDecimal.until</code>. */
-  def until(end: Double): Range.Partial[Double, GenericRange.Exclusive[BigDecimal]] =  
+  def until(end: Double): Range.Partial[Double, GenericRange[Double]] =  
     new Range.Partial(until(end, _))
 
   /** See <code>BigDecimal.until</code>. */
-  def until(end: Double, step: Double): GenericRange.Exclusive[BigDecimal] =
-    BigDecimal(x).until(end, step)
+  def until(end: Double, step: Double): GenericRange[Double] =
+    Range.Double(x, end, step)
   
   /** See <code>BigDecimal.to</code>. */
-  def to(end: Double): Range.Partial[Double, GenericRange.Inclusive[BigDecimal]] =
+  def to(end: Double): Range.Partial[Double, GenericRange[Double]] =
     new Range.Partial(to(end, _))
   
   /** See <code>BigDecimal.to</code>. */
-  def to(end: Double, step: Double): GenericRange.Inclusive[BigDecimal] =
-    BigDecimal(x).to(end, step)
+  def to(end: Double, step: Double): GenericRange[Double] =
+    Range.Double.inclusive(x, end, step)
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
@@ -51,7 +52,7 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def toRadians: Double = Math.toRadians(x)
 
   /** Converts an angle measured in radians to an approximately equivalent
-   *  angle measured in degrees.
+   *  angle measured in degrees
    *
    *  @param  x angle, in radians
    *  @return the measurement of the angle <code>x</code> in degrees.

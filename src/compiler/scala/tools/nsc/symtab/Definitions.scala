@@ -53,7 +53,7 @@ trait Definitions {
     
     // top types
     lazy val AnyClass     = newClass(ScalaPackageClass, nme.Any, Nil) setFlag (ABSTRACT)
-    lazy val AnyValClass  = newClass(ScalaPackageClass, nme.AnyVal, anyparam) setFlag (FINAL | SEALED)
+    lazy val AnyValClass  = newClass(ScalaPackageClass, nme.AnyVal, anyparam) setFlag (ABSTRACT | SEALED)
     lazy val AnyRefClass  = newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor)
     lazy val ObjectClass  = getClass(sn.Object)
 
@@ -172,7 +172,7 @@ trait Definitions {
     lazy val SeqModule  = getModule2("scala.Seq", "scala.collection.Seq")
       def Seq_length = getMember(SeqClass, nme.length)
     lazy val RandomAccessSeqMutableClass = getMember(
-      getModule2("scala.RandomAccessSeq", "scala.collection.Vector"), nme.Mutable)
+      getModule2("scala.RandomAccessSeq", "scala.collection.IndexedSeq"), nme.Mutable)
       
     lazy val ListModule   = getModule2("scala.List", "scala.collection.immutable.List")
       def List_apply = getMember(ListModule, nme.apply)
