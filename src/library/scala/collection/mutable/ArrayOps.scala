@@ -58,7 +58,7 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
  */
 object ArrayOps {
 
-  class ofRef[T <: AnyRef](override val repr: Array[T]) extends ArrayOps[T] with ArrayLike[T, Array[T]] {
+  final class ofRef[T <: AnyRef](override val repr: Array[T]) extends ArrayOps[T] with ArrayLike[T, Array[T]] {
 
     override protected[this] def thisCollection: WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def toCollection(repr: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](repr)
@@ -70,7 +70,7 @@ object ArrayOps {
     def update(index: Int, elem: T) { repr(index) = elem }
   } 
 
-  class ofByte(override val repr: Array[Byte]) extends ArrayOps[Byte] with ArrayLike[Byte, Array[Byte]] {
+  final class ofByte(override val repr: Array[Byte]) extends ArrayOps[Byte] with ArrayLike[Byte, Array[Byte]] {
 
     override protected[this] def thisCollection: WrappedArray[Byte] = new WrappedArray.ofByte(repr)
     override protected[this] def toCollection(repr: Array[Byte]): WrappedArray[Byte] = new WrappedArray.ofByte(repr)
@@ -81,7 +81,7 @@ object ArrayOps {
     def update(index: Int, elem: Byte) { repr(index) = elem }
   } 
 
-  class ofShort(override val repr: Array[Short]) extends ArrayOps[Short] with ArrayLike[Short, Array[Short]] {
+  final class ofShort(override val repr: Array[Short]) extends ArrayOps[Short] with ArrayLike[Short, Array[Short]] {
 
     override protected[this] def thisCollection: WrappedArray[Short] = new WrappedArray.ofShort(repr)
     override protected[this] def toCollection(repr: Array[Short]): WrappedArray[Short] = new WrappedArray.ofShort(repr)

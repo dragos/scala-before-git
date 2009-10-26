@@ -559,7 +559,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       atPhase(phase.next)(clazz.owner.info.decls enter spc) //!! assumes fully specialized classes
     }
     if (hasSubclasses) clazz.resetFlag(FINAL)
-    (new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
+    //(new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
     decls1
   }
 
@@ -915,7 +915,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           } else tree
           
         case TypeApply(Select(qual, name), targs) if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) =>
-          log("checking typeapp for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
+          log("checking typeapp for rerouting [TypeApply]: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
           val qual1 = transform(qual)
           specSym(qual1) match {
             case Some(specMember) =>
@@ -939,7 +939,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val qual1 = transform(qual)
           log("checking for unification at " + tree + " with sym.tpe: " + symbol.tpe + " and tree.tpe: " + tree.tpe + " at " + tree.pos.line)
           val env = unify(symbol.tpe, tree.tpe, emptyEnv)
-          log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
+          log("checking for rerouting [Select]: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
           if (!env.isEmpty) {
             val specMember = overload(symbol, env)
             if (specMember.isDefined) {
@@ -968,6 +968,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specMembers = makeSpecializedMembers(tree.symbol.enclClass) ::: (implSpecClasses(body) map localTyper.typed)
           if (!symbol.isPackageClass)
             (new CollectMethodBodies)(tree)
+          log("Term rewriting for " + symbol)
           treeCopy.Template(tree, parents, self, atOwner(currentOwner)(transformTrees(body ::: specMembers)))
         
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if info.isDefinedAt(symbol) =>
