@@ -145,6 +145,14 @@ trait Members { self: ICodes =>
     def lookupField(s: Symbol) = fields find (_.symbol == s)
     def lookupMethod(s: Symbol) = methods find (_.symbol == s)
     def lookupMethod(s: Name) = methods find (_.symbol.name == s)
+
+    /** Is this class a leaf class? A leaf class is either
+     *  a final class, or a class defined in a final class or object
+     *  who has no subclasses.
+     */
+    lazy val leafClass: Boolean = clazz.isFinal ||
+      (clazz.owner.isFinal
+         && !clazz.owner.info.exists { sym: Symbol => sym.isClass && sym.isNonBottomSubClass(symbol) })
   }
 
   /** Represent a field in ICode */

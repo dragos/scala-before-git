@@ -488,7 +488,7 @@ abstract class Inliners extends SubComponent {
           lookupImpl(meth, clazz.tpe.parents(0).typeSymbol)
       }
     }
-    
+
     /** small method size (in blocks) */
     val SMALL_METHOD_SIZE = 1
     
