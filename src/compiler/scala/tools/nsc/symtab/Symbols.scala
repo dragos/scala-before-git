@@ -1974,4 +1974,37 @@ trait Symbols {
     override def toString() =
       "TypeHistory(" + phaseOf(validFrom)+":"+runId(validFrom) + "," + info + "," + prev + ")"
   }
+
+  import java.io.PrintWriter
+
+  class SymbolPrinter(out: PrintWriter) extends treePrinters.TreePrinter(out) {
+
+    def printRow[T](ts: List[T], p: T => Unit, start: String, sep: String, end: String) {
+      print(start); printSeq(ts){p}{print(sep)}; print(end)
+    }
+
+    def printColumn[T](ts: List[T], p: T => Unit, start: String, sep: String, end: String) {
+      print(start); indent; println
+      printSeq(ts){p}{print(sep); println}; undent; println; print(end)
+    }
+
+    def printClass(sym: Symbol) {
+      print(sym.toString)
+      if (!sym.info.typeParams.isEmpty)
+        printRow[Symbol](sym.info.typeParams, printTypeParam, "[", ", ", "]")
+      print(" extends ")
+      printRow[Type](sym.info.parents, (t => print(t.toString)), "", " with ", "")
+      printColumn(sym.info.decls.toList, printMember, "{", "", "}\n")
+      flush
+    }
+
+    def printTypeParam(sym: Symbol) {
+      print(sym.name); print(sym.info.bounds.toString)
+    }
+    def printMember(sym: Symbol) {
+      if (sym.isClass) printClass(sym)
+      else print(sym.defString)
+    }
+  }
+
 }

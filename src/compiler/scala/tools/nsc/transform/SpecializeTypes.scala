@@ -201,7 +201,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val (methparams, others) = tvars.toList.partition(_.owner.isMethod)
     val tvars1 = methparams.sortWith(_.name.toString < _.name.toString)
     val tvars2 = others.sortWith(_.name.toString < _.name.toString)
-    log("specName(" + sym + ") env " + env)
+//    log("specName(" + sym + ") env " + env)
     specializedName(sym.name, tvars1 map env, tvars2 map env)
   }
 
@@ -524,10 +524,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         } else if (m.isClass) {
           val specClass: Symbol = m.cloneSymbol(cls).setFlag(SPECIALIZED)
           typeEnv(specClass) = fullEnv
-          specClass.name = specializedName(specClass, fullEnv)
+          //specClass.name = specializedName(specClass, env) 
           enterMember(specClass)
           log("entered specialized class with info " + specClass.fullNameString + ": " + specClass.info)
           info(specClass) = SpecializedInnerClass(m, fullEnv)
+          specializeClass(specClass, fullEnv)
         }
       }
       cls
@@ -549,7 +550,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
     })
-    
+
     var hasSubclasses = false
     for (env <- specializations(clazz.info.typeParams) if satisfiable(env)) {
       val spc = specializedClass(env, decls1)
@@ -558,6 +559,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       atPhase(phase.next)(clazz.owner.info.decls enter spc) //!! assumes fully specialized classes
     }
     if (hasSubclasses) clazz.resetFlag(FINAL)
+    (new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
     decls1
   }
 
