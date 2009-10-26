@@ -743,7 +743,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val parents1 = parents mapConserve (this);
           val decls1 = mapOver(decls.toList);
           if ((parents1 eq parents) && (decls1 eq decls)) tp
-          else ClassInfoType(parents1, newScope(decls1), clazz)
+          else ClassInfoType(parents1, new Scope(decls1), clazz)
         case AnnotatedType(annots, atp, selfsym) =>
           val annots1 = mapOverAnnotations(annots)
           val atp1 = this(atp)
