@@ -51,6 +51,11 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
     for (b <- bs) bb += b.result
     bb.result
   }
+
+  /** Covariant override of Object.clone. It cannot be abstract because it would be overriden by
+   *  the inherited clone, which has weaker access privileges.  
+   */
+  override def clone: Array[T] = error("This method needs to be concrete")
 }
 
 /**
@@ -68,7 +73,8 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): T = repr(index)
     def update(index: Int, elem: T) { repr(index) = elem }
-  } 
+    override def clone: Array[T] = runtime.ArrayRuntime.cloneArray(repr.asInstanceOf[Array[AnyRef]]).asInstanceOf[Array[T]]
+  }
 
   class ofByte(override val repr: Array[Byte]) extends ArrayOps[Byte] with ArrayLike[Byte, Array[Byte]] {
 
@@ -79,7 +85,8 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Byte = repr(index)
     def update(index: Int, elem: Byte) { repr(index) = elem }
-  } 
+    override def clone: Array[Byte] = runtime.ArrayRuntime.cloneArray(repr)
+  }
 
   class ofShort(override val repr: Array[Short]) extends ArrayOps[Short] with ArrayLike[Short, Array[Short]] {
 
@@ -90,7 +97,8 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Short = repr(index)
     def update(index: Int, elem: Short) { repr(index) = elem }
-  } 
+    override def clone: Array[Short] = runtime.ArrayRuntime.cloneArray(repr)
+  }
 
   class ofChar(override val repr: Array[Char]) extends ArrayOps[Char] with ArrayLike[Char, Array[Char]] {
 
@@ -101,6 +109,7 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Char = repr(index)
     def update(index: Int, elem: Char) { repr(index) = elem }
+    override def clone: Array[Char] = runtime.ArrayRuntime.cloneArray(repr)
   } 
 
   class ofInt(override val repr: Array[Int]) extends ArrayOps[Int] with ArrayLike[Int, Array[Int]] {
@@ -112,6 +121,7 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Int = repr(index)
     def update(index: Int, elem: Int) { repr(index) = elem }
+    override def clone: Array[Int] = runtime.ArrayRuntime.cloneArray(repr)
   } 
 
   class ofLong(override val repr: Array[Long]) extends ArrayOps[Long] with ArrayLike[Long, Array[Long]] {
@@ -123,6 +133,7 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Long = repr(index)
     def update(index: Int, elem: Long) { repr(index) = elem }
+    override def clone: Array[Long] = runtime.ArrayRuntime.cloneArray(repr)
   } 
 
   class ofFloat(override val repr: Array[Float]) extends ArrayOps[Float] with ArrayLike[Float, Array[Float]] {
@@ -134,6 +145,7 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Float = repr(index)
     def update(index: Int, elem: Float) { repr(index) = elem }
+    override def clone: Array[Float] = runtime.ArrayRuntime.cloneArray(repr)
   } 
 
   class ofDouble(override val repr: Array[Double]) extends ArrayOps[Double] with ArrayLike[Double, Array[Double]] {
@@ -145,6 +157,7 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Double = repr(index)
     def update(index: Int, elem: Double) { repr(index) = elem }
+    override def clone: Array[Double] = runtime.ArrayRuntime.cloneArray(repr)
   } 
 
   class ofBoolean(override val repr: Array[Boolean]) extends ArrayOps[Boolean] with ArrayLike[Boolean, Array[Boolean]] {
@@ -156,6 +169,7 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Boolean = repr(index)
     def update(index: Int, elem: Boolean) { repr(index) = elem }
+    override def clone: Array[Boolean] = runtime.ArrayRuntime.cloneArray(repr)
   } 
 
   class ofUnit(override val repr: Array[Unit]) extends ArrayOps[Unit] with ArrayLike[Unit, Array[Unit]] {
@@ -167,5 +181,6 @@ object ArrayOps {
     def length: Int = repr.length
     def apply(index: Int): Unit = repr(index)
     def update(index: Int, elem: Unit) { repr(index) = elem }
+    override def clone: Array[Unit] = runtime.ArrayRuntime.cloneArray(repr.asInstanceOf[Array[AnyRef]]).asInstanceOf[Array[Unit]]
   } 
 }
