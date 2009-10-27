@@ -313,7 +313,7 @@ abstract class Inliners extends SubComponent {
                       if (settings.debug.value)
                         log("" + i + " has actual receiver: " + receiver);
                     }
-                    if (!concreteMethod.isFinal && receiver.isFinal) {
+                    if (!concreteMethod.isFinal && receiver.isLeafClass) {
                       concreteMethod = lookupImpl(concreteMethod, receiver)
                       if (settings.debug.value)
                         log("\tlooked up method: " + concreteMethod.fullNameString)

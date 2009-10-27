@@ -569,6 +569,15 @@ trait Symbols {
     final def isSealed: Boolean =
       isClass && (hasFlag(SEALED) || isValueClass(this))
 
+    /** Is this class a leaf class? A leaf class is either
+     *  a final class, or a class defined in a final class or object
+     *  who has no subclasses.
+     */
+    lazy val isLeafClass: Boolean = isFinal ||
+      (owner.isFinal
+         && !owner.info.decls.exists { sym: Symbol => sym.isClass && sym.isNonBottomSubClass(this) })
+
+
     /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
     final def isLocal: Boolean = owner.isTerm
 
