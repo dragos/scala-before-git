@@ -18,6 +18,7 @@ import scala.collection.{mutable, immutable}
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import global._
   import Flags._
+  
   /** the name of the phase: */
   val phaseName: String = "specialize"
   
@@ -272,7 +273,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   def concreteTypes(sym: Symbol): List[Type] = 
     sym.getAnnotation(SpecializedClass) match {
       case Some(AnnotationInfo(_, args, _, _)) => 
-        args match {
+        args match {      
           case Literal(ct) :: _ => 
             val tpes = parseTypes(ct.stringValue)
             log(sym + " specialized on " + tpes)
@@ -556,11 +557,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val spc = specializedClass(env, decls1)
       log("entered " + spc + " in " + clazz.owner)
       hasSubclasses = true
+      printClassSymbol(spc)
       atPhase(phase.next)(clazz.owner.info.decls enter spc) //!! assumes fully specialized classes
-    }
+    }                                               
     if (hasSubclasses) clazz.resetFlag(FINAL)
-    //(new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
+    printClassSymbol(clazz)
     decls1
+  }
+
+  /** Print symbol informatino for all members of clazz */
+  private def printClassSymbol(clazz: Symbol) {
+    println("[" + clazz.fullNameString + "]")
+    (new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
   }
 
   /** Expand member `sym' to a set of normalized members. Normalized members
