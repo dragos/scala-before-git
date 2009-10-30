@@ -523,9 +523,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             specVal.resetFlag(PRIVATE)
           }
         } else if (m.isClass) {
-          val specClass: Symbol = m.cloneSymbol(cls).setFlag(SPECIALIZED)
+          val specClass: Symbol = cloneClassSymbol(m, cls).setFlag(SPECIALIZED)
+          specClass.setInfo(specClass.info.substSym(m.info.typeParams, specClass.info.typeParams))
           typeEnv(specClass) = fullEnv
-          //specClass.name = specializedName(specClass, env) 
+          println("before enterMember")
+          printClassSymbol(specClass)
+          //specClass.name = specializedName(specClass, env)
           enterMember(specClass)
           log("entered specialized class with info " + specClass.fullNameString + ": " + specClass.info)
           info(specClass) = SpecializedInnerClass(m, fullEnv)
@@ -565,10 +568,35 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     decls1
   }
 
+  /** Clone a class symbol, including its members and their types.
+   */
+  private def cloneClassSymbol(clazz: Symbol, owner: Symbol): Symbol = {
+    def cloneDecls(result: Type, tp: Type, decls: Scope, newtparams: List[Symbol]): Type = {
+      val syms1 = decls.toList;
+      for (val sym <- syms1)
+        result.decls.enter(sym.cloneSymbol(result.typeSymbol));
+      val syms2 = result.decls.toList;
+      val resultThis = result.typeSymbol.thisType;
+      for (val sym <- syms2)
+        sym.setInfo(sym.info.substSym(syms1 ::: clazz.typeParams, syms2 ::: newtparams).substThis(tp.typeSymbol, resultThis));
+      result
+    }
+    val clazz1 = clazz.cloneSymbol(owner)
+    val info1 = clazz1.info match {
+      case PolyType(tparams, resTpe) =>
+        PolyType(tparams, cloneDecls(ClassInfoType(resTpe.parents, new Scope(), clazz1), clazz.tpe, resTpe.decls, tparams))
+      case ClassInfoType(parents, decls, clazz2) =>
+        cloneDecls(ClassInfoType(parents, new Scope(), clazz1), clazz1.tpe, decls, List())  
+    }
+    clazz1.setInfo(info1)
+  }
+
   /** Print symbol informatino for all members of clazz */
   private def printClassSymbol(clazz: Symbol) {
-    println("[" + clazz.fullNameString + "]")
-    (new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
+    if (settings.log.contains("specialize")) {
+      println("[" + clazz.fullNameString + "]")
+      (new SymbolPrinter(new java.io.PrintWriter(System.out))).printClass(clazz)
+    }
   }
 
   /** Expand member `sym' to a set of normalized members. Normalized members

@@ -1999,7 +1999,7 @@ trait Symbols {
     }
 
     def printTypeParam(sym: Symbol) {
-      print(sym.name); print(sym.info.bounds.toString)
+      print(sym.nameString); print(sym.info.bounds.toString)
     }
     def printMember(sym: Symbol) {
       if (sym.isClass) printClass(sym)
