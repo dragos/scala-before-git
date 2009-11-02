@@ -1,3 +1,5 @@
+import scala.annotation.specialized._
+
 abstract class AbsFun[@specialized R] {
 //  def andThen[B](x: B): B
 

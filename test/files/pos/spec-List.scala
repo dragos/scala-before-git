@@ -14,6 +14,8 @@ import generic._
 import mutable.{Builder, ListBuffer}
 import annotation.tailrec
 
+import scala.annotation.specialized._
+
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
  *  classes <code>scala.Nil</code> and <code>scala.::</code> that

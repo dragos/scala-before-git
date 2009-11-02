@@ -1,3 +1,5 @@
+import scala.annotation.specialized._
+
 trait AbsFun[@specialized -A, @specialized +B] {
   def apply(x: A): B
 }

@@ -1,3 +1,5 @@
+import scala.annotation.specialized._
+
 abstract class Foo[@specialized T: ClassManifest, U <: Ordered[U]](x: T, size: Int) {
   var y: T
   var z: T = x

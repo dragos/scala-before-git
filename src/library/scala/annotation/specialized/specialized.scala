@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.annotation.specialized
 
 /** Annotate type parameters on which code should be automatically
  *  specialized. For example:

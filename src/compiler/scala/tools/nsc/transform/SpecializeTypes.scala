@@ -97,7 +97,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   } 
     
   /** The annotation used to mark specialized type parameters. */
-  lazy val SpecializedClass = definitions.getClass("scala.specialized")
+  lazy val SpecializedClass = definitions.getClass("scala.annotation.specialized.specialized")
     
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new SpecializationTransformer(unit)
@@ -526,7 +526,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specClass: Symbol = cloneClassSymbol(m, cls).setFlag(SPECIALIZED)
           specClass.setInfo(specClass.info.substSym(m.info.typeParams, specClass.info.typeParams))
           typeEnv(specClass) = fullEnv
-          println("before enterMember")
+          log("before enterMember")
           printClassSymbol(specClass)
           //specClass.name = specializedName(specClass, env)
           enterMember(specClass)

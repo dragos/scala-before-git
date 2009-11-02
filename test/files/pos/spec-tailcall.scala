@@ -1,3 +1,5 @@
+import scala.annotation.specialized._
+
 class TailCall[@specialized T] {
   final def dropLeft(n: Int, xs: List[T]): List[T] = 
     if (n == 0) xs

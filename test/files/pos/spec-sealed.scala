@@ -1,3 +1,5 @@
+import scala.annotation.specialized._
+
 sealed abstract class MyList[@specialized +A] {
   def head: A
   def tail: MyList[A]

@@ -11,6 +11,7 @@
 
 package scala
 
+import scala.annotation.specialized._
 
 /** <p>
  *    Function with 1 parameters.

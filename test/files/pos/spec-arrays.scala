@@ -1,3 +1,5 @@
+import scala.annotation.specialized._
+
 abstract class AbsArray[T] {
   def apply(idx: Int): T
   def update(idx: Int, elem: T)
