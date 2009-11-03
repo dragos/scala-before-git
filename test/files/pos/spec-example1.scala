@@ -1,5 +1,3 @@
-import scala.annotation.specialized._
-
 abstract class C[@specialized T](_f: T) {
   def m(x: T): T
   def n(x: T): T = x

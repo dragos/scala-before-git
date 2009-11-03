@@ -11,8 +11,6 @@
 
 package scala
 
-import scala.annotation.specialized._
-
 /**
  * @since 2.8
  */

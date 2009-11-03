@@ -1,5 +1,3 @@
-import scala.annotation.specialized._
-
 trait AbsFunction1[@specialized -T, @specialized +U] {
   def apply(x: T): U
 }

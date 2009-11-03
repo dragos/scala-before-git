@@ -1,5 +1,3 @@
-import scala.annotation.specialized._
-
 class Foo[@specialized T] {
   var v: T = _
 

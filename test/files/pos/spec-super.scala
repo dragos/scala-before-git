@@ -2,8 +2,6 @@ import scala.collection.immutable._
 import scala.collection.mutable.ListBuffer
 import scala.collection.generic._
 
-import scala.annotation.specialized._
-
 trait Base[+A] extends Traversable[A] {
   def add[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Base[A], B, That]): That = {
     val b = bf(this)

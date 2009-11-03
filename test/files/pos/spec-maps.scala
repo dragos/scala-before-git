@@ -1,5 +1,3 @@
-import scala.annotation.specialized._
-
 trait Fun1[@specialized +R, @specialized -T] {
   def apply(x: T): R
 }

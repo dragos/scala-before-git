@@ -1,5 +1,3 @@
-import scala.annotation.specialized._
-
 abstract class AbsFun[@specialized T, @specialized U] {
   // abstract function, fully specialized
   def apply(x: T): U
