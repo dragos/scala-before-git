@@ -49,6 +49,13 @@ package object scala {
   type Range = scala.collection.immutable.Range
   val Range = scala.collection.immutable.Range
 
+  /** A holder class for types. You can use it to pass type lists to annotations, for instance:
+   *  {{{
+   *    @specialized[Int|Double|Unit]
+   *  }}}
+   */
+  type |[A, B] = (A, B)
+
   @deprecated("use Iterable instead") type Collection[+A] = Iterable[A]
   @deprecated("use Iterable instead") val Collection = Iterable
 
