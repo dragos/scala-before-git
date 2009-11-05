@@ -900,7 +900,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   
     /** Map a specializable method to its value parameter symbols. */
     val parameters: mutable.Map[Symbol, List[List[Symbol]]] = new mutable.HashMap
-    
+
+    def parameters(meth: Symbol): List[List[Symbol]] =
+      meth.info.paramss
+
     /** Collect method bodies that are concrete specialized methods.
      */
     class CollectMethodBodies extends Traverser {
