@@ -571,22 +571,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Clone a class symbol, including its members and their types.
    */
   private def cloneClassSymbol(clazz: Symbol, owner: Symbol): Symbol = {
-    def cloneDecls(result: Type, tp: Type, decls: Scope, newtparams: List[Symbol]): Type = {
+    def cloneDecls(result: Type, decls: Scope, newtparams: List[Symbol]): Type = {
       val syms1 = decls.toList;
       for (val sym <- syms1)
         result.decls.enter(sym.cloneSymbol(result.typeSymbol));
       val syms2 = result.decls.toList;
       val resultThis = result.typeSymbol.thisType;
-      for (val sym <- syms2)
-        sym.setInfo(sym.info.substSym(syms1 ::: clazz.typeParams, syms2 ::: newtparams).substThis(tp.typeSymbol, resultThis));
+      log("resultThis: " + resultThis + " > " + result.typeSymbol.fullNameString + " > " + clazz.fullNameString)
+      for (val sym <- syms2) {
+        val oldinfo = sym.info
+        sym.setInfo(sym.info.substSym(clazz :: syms1 ::: clazz.typeParams, result.typeSymbol :: syms2 ::: newtparams).substThis(clazz, resultThis));
+        log(sym + ": " + sym.info + " -> " + sym.info)
+      }
       result
     }
     val clazz1 = clazz.cloneSymbol(owner)
     val info1 = clazz1.info match {
       case PolyType(tparams, resTpe) =>
-        PolyType(tparams, cloneDecls(ClassInfoType(resTpe.parents, new Scope(), clazz1), clazz.tpe, resTpe.decls, tparams))
+        PolyType(tparams, cloneDecls(ClassInfoType(resTpe.parents, new Scope(), clazz1), resTpe.decls, tparams))
       case ClassInfoType(parents, decls, clazz2) =>
-        cloneDecls(ClassInfoType(parents, new Scope(), clazz1), clazz1.tpe, decls, List())  
+        cloneDecls(ClassInfoType(parents, new Scope(), clazz1), decls, List())  
     }
     clazz1.setInfo(info1)
   }
@@ -1243,10 +1247,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         } else if (m.isValue) {
           mbrs += ValDef(m, EmptyTree).setType(NoType).setPos(m.pos)
         } else if (m.isClass) {
-//           mbrs  +=
-//              ClassDef(m, Template(m.info.parents map TypeTree, emptyValDef, List())
-//                         .setSymbol(m.newLocalDummy(m.pos)))
-//            log("created synthetic class: " + m.fullNameString)
+           mbrs  +=
+              ClassDef(m, Template(m.info.parents map TypeTree, emptyValDef, List())
+                         .setSymbol(m.newLocalDummy(m.pos)))
+            log("created synthetic class: " + m.fullNameString)
         }
       }
       mbrs.toList
