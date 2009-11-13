@@ -63,9 +63,11 @@ trait BasicBlocks {
     def exceptionHandlerStart_=(b: Boolean) = 
       if (b) setFlag(EX_HEADER) else resetFlag(EX_HEADER)
 
-    /** Has this basic block been modified since the last call to 'toList'? */ 
-    private def touched = hasFlag(TOUCHED)
-    private def touched_=(b: Boolean) = if (b) setFlag(TOUCHED) else resetFlag(TOUCHED)
+    /** Has this basic block been modified since the last call to 'successors'? */
+    def touched = hasFlag(TOUCHED)
+    def touched_=(b: Boolean) = if (b) {
+      setFlag(TOUCHED)
+    } else resetFlag(TOUCHED)
 
     /** Cached predecessors. */
     var preds: List[BasicBlock] = null
@@ -85,9 +87,9 @@ trait BasicBlocks {
     private var instrs: Array[Instruction] = _
 
     override def toList: List[Instruction] = {
-      if (closed && touched)
-        instructionList = instrs.toList
-      instructionList
+      if (closed)
+        instrs.toList
+      else instructionList
     }
     
     /** Return an iterator over the instructions in this basic block. */
@@ -101,11 +103,10 @@ trait BasicBlocks {
     }
 
     def fromList(is: List[Instruction]) {
+      code.touched = true
       instrs = toInstructionArray(is)
       closed = true
     }
-
-    // public:
 
     /** Return the index of inst. Uses reference equality.
      *  Returns -1 if not found.
@@ -166,9 +167,9 @@ trait BasicBlocks {
      */
     def replaceInstruction(pos: Int, instr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
-
       instr.setPos(instrs(pos).pos)
       instrs(pos) = instr
+      code.touched = true
       true
     }
 
@@ -187,6 +188,7 @@ trait BasicBlocks {
           newInstr.setPos(oldInstr.pos)
           instrs(i) = newInstr
           changed = true
+          code.touched = true
         }
         i += 1
       }
@@ -213,6 +215,8 @@ trait BasicBlocks {
       if (i < instrs.length) {
         val newInstrs = new Array[Instruction](instrs.length + is.length - 1);
         changed = true
+        code.touched = true
+
         Array.copy(instrs, 0, newInstrs, 0, i)
         var j = i
         for (x <- is) {
@@ -244,6 +248,7 @@ trait BasicBlocks {
           Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i)
         instrs = newInstrs;
       }
+      code.touched = true
     }
 
     /** Removes instructions found at the given positions.
@@ -264,6 +269,7 @@ trait BasicBlocks {
         i += 1
       }
       instrs = newInstrs
+      code.touched = true
     }
     
     /** Remove the last instruction of this basic block. It is
@@ -274,7 +280,7 @@ trait BasicBlocks {
         removeInstructionsAt(size)
       else {
         instructionList = instructionList.tail
-        touched = true
+        code.touched = true
       }
     }
 
@@ -287,7 +293,9 @@ trait BasicBlocks {
         var i = 0
         while (i < instrs.length) {
           map get instrs(i) match {
-            case Some(instr) => touched = replaceInstruction(i, instr)
+            case Some(instr) =>
+              val changed = replaceInstruction(i, instr)
+              code.touched |= changed
             case None => ()
           }
           i += 1
@@ -321,6 +329,7 @@ trait BasicBlocks {
         emit(instr, NoPosition)
     }
 
+    /** Emitting does not set touched to true, because it's  */
     def emit(instr: Instruction, pos: Position) {
       if (closed) {
         print()
@@ -329,7 +338,6 @@ trait BasicBlocks {
       assert(!closed || ignore, "BasicBlock closed")
 
       if (!ignore) {
-        touched = true
         instr.setPos(pos)
         instructionList = instr :: instructionList
         _lastInstruction = instr
@@ -365,6 +373,7 @@ trait BasicBlocks {
       assert(closed)
       closed = false
       ignore = false
+      touched = true
       instructionList = instructionList.reverse  // prepare for appending to the head
     }
 
@@ -409,25 +418,37 @@ trait BasicBlocks {
       array
     }
 
-    def successors : List[BasicBlock] = if (isEmpty) Nil else {
-      var res = lastInstruction match {
-        case JUMP (whereto) => List(whereto)
-        case CJUMP(success, failure, _, _) => failure :: success :: Nil
-        case CZJUMP(success, failure, _, _) => failure :: success :: Nil
-        case SWITCH(_,labels) => labels
-        case RETURN(_) => Nil
-        case THROW() => Nil
-        case _ =>
-          if (closed) {
-            dump
-            global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
+    /** Cached value of successors. Must be recomputed whenver a block in the current method is changed. */
+    private var succs: List[BasicBlock] = Nil
+
+    def successors : List[BasicBlock] = {
+      if (touched) {
+        resetFlag(TOUCHED)
+        succs = if (isEmpty) Nil else {
+          var res = lastInstruction match {
+            case JUMP(whereto) => List(whereto)
+            case CJUMP(success, failure, _, _) => failure :: success :: Nil
+            case CZJUMP(success, failure, _, _) => failure :: success :: Nil
+            case SWITCH(_, labels) => labels
+            case RETURN(_) => Nil
+            case THROW() => Nil
+            case _ =>
+              if (closed) {
+                dump
+                global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
+              }
+              else Nil
           }
-          else Nil
+          method.exh.foreach {
+            e: ExceptionHandler =>
+              if (e.covers(this)) res = e.startBlock :: res
+          }
+          val res1 = res ++ exceptionalSucc(this, res)
+          res1
+        }
       }
-      method.exh.foreach { e: ExceptionHandler =>
-        if (e.covers(this)) res = e.startBlock :: res
-      }
-      res ++ exceptionalSucc(this, res)
+//        println("reusing cached successors for " + this + " in method " + method)
+      succs
     }
     
     /** Return a list of successors for 'b' that come from exception handlers
@@ -467,7 +488,7 @@ trait BasicBlocks {
 
     def print(out: java.io.PrintStream) {
       out.println("block #"+label+" :")
-      toList.foreach(i => out.println("  " + i))
+      foreach(i => out.println("  " + i))
       out.print("Successors: ")
       successors.foreach((x: BasicBlock) => out.print(" "+x.label.toString()))
       out.println()
@@ -482,6 +503,16 @@ trait BasicBlocks {
     }
 
     override def toString(): String = "" + label
+
+    def flagsString: String =
+      ("block " + label + (
+         if (hasFlag(LOOP_HEADER)) " <loopheader> "
+         else if (hasFlag(IGNORING)) " <ignore> "
+         else if (hasFlag(EX_HEADER)) " <exheader> "
+         else if (hasFlag(CLOSED)) " <closed> "
+         else if (hasFlag(TOUCHED)) " <touched> "
+         else ""
+      ))
   }
 
 }

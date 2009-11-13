@@ -47,8 +47,8 @@ trait TypeKinds { self: ICodes =>
     )
   }
   /** Reverse map for toType */
-  private lazy val reversePrimitiveMap: collection.Map[TypeKind, Symbol] = 
-    collection.Map(primitiveTypeMap.toList map (_.swap) : _*)
+  private lazy val reversePrimitiveMap: collection.Map[TypeKind, Symbol] =
+    collection.Map((primitiveTypeMap.toList.map (_.swap)) : _*)
 
   /** This class represents a type kind. Type kinds
    * represent the types that the VM know (or the ICode 
@@ -108,6 +108,8 @@ trait TypeKinds { self: ICodes =>
     def dimensions: Int = 0
   }
 
+  var lubs0 = 0
+
   /**
    * The least upper bound of two typekinds. They have to be either
    * REFERENCE or ARRAY kinds.
@@ -116,16 +118,11 @@ trait TypeKinds { self: ICodes =>
    */
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
     def lub0(t1: Type, t2: Type): Type = {
-      val lubTpe = global.lub(t1 :: t2 :: Nil)
-      assert(lubTpe.typeSymbol.isClass,
-             "Least upper bound of " + t1 + " and " + t2 + " is not a class: " + lubTpe)
-      lubTpe
+      //lubs0 += 1
+      global.lub(t1 :: t2 :: Nil)
     }
 
-    if ((a.isReferenceType || a.isArrayType) &&
-        (b.isReferenceType || b.isArrayType))
-      toTypeKind(lub0(a.toType, b.toType))
-    else if (a == b) a
+    if (a == b) a
     else if (a == REFERENCE(NothingClass)) b
     else if (b == REFERENCE(NothingClass)) a
     else (a, b) match {
@@ -135,7 +132,12 @@ trait TypeKinds { self: ICodes =>
       case (BYTE, INT) | (INT, BYTE) => INT
       case (SHORT, INT) | (INT, SHORT) => INT
       case (CHAR, INT) | (INT, CHAR) => INT
-      case _ => throw new CheckerError("Incompatible types: " + a + " with " + b)
+      case _ =>
+        if ((a.isReferenceType || a.isArrayType) &&
+            (b.isReferenceType || b.isArrayType))
+          toTypeKind(lub0(a.toType, b.toType))
+        else
+          throw new CheckerError("Incompatible types: " + a + " with " + b)
     }
   }
 

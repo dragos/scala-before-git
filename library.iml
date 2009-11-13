@@ -5,7 +5,9 @@
       <configuration />
     </facet>
   </component>
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/build/quick/classes/library" />
+    <output-test url="file://$MODULE_DIR$/out/test/library" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/META-INF" />
     <content url="file://$MODULE_DIR$/bin" />
@@ -15,6 +17,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Locker libs" level="project" />
     <orderEntry type="library" name="Project ant library" level="project" />
     <orderEntry type="library" name="Project Scala SDK" level="project" />
     <orderEntry type="library" name="ant" level="application" />

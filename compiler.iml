@@ -9,17 +9,29 @@
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/build/quick/classes/compiler" />
+    <output-test url="file://$MODULE_DIR$/out/test/compiler" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/src/compiler">
       <sourceFolder url="file://$MODULE_DIR$/src/compiler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Locker libs" level="project" />
     <orderEntry type="library" name="Project ant library" level="project" />
-    <orderEntry type="library" name="Locker SDK" level="project" />
-    <orderEntry type="library" name="Project Scala SDK" level="project" />
     <orderEntry type="library" name="ant" level="application" />
+    <orderEntry type="library" name="Project Scala SDK" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/build/pack/lib/scala-compiler.jar!/" />
+          <root url="jar://$MODULE_DIR$/build/pack/lib/scala-library.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 
