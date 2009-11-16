@@ -40,8 +40,8 @@ trait BasicBlocks {
     def hasFlag(flag: Int): Boolean = (flags & flag) != 0
     
     /** Set the given flag. */
-    def setFlag(flag: Int): Unit = flags |= flag
-    def resetFlag(flag: Int) {
+    private def setFlag(flag: Int): Unit = flags |= flag
+    private def resetFlag(flag: Int) {
       flags &= ~flag
     }
     
@@ -64,10 +64,15 @@ trait BasicBlocks {
       if (b) setFlag(EX_HEADER) else resetFlag(EX_HEADER)
 
     /** Has this basic block been modified since the last call to 'successors'? */
-    def touched = hasFlag(TOUCHED)
+    def touched = hasFlag(DIRTYSUCCS)
     def touched_=(b: Boolean) = if (b) {
-      setFlag(TOUCHED)
-    } else resetFlag(TOUCHED)
+      setFlag(DIRTYSUCCS | DIRTYPREDS)
+    } else {
+      resetFlag(DIRTYSUCCS | DIRTYPREDS)
+    }
+
+    // basic blocks start in a dirty state
+    setFlag(DIRTYSUCCS | DIRTYPREDS)
 
     /** Cached predecessors. */
     var preds: List[BasicBlock] = null
@@ -329,7 +334,10 @@ trait BasicBlocks {
         emit(instr, NoPosition)
     }
 
-    /** Emitting does not set touched to true, because it's  */
+    /** Emitting does not set touched to true. During code generation this is a hotspot and
+     *  setting the flag for each emit is a waste. Caching should happend only after a block
+     *  is closed, which sets the DIRTYSUCCS flag.
+     */
     def emit(instr: Instruction, pos: Position) {
       if (closed) {
         print()
@@ -365,6 +373,7 @@ trait BasicBlocks {
     def close {
       assert(instructionList.length > 0, "Empty block.")
       closed = true
+      setFlag(DIRTYSUCCS)
       instructionList = instructionList.reverse
       instrs = toInstructionArray(instructionList)
     }
@@ -423,7 +432,7 @@ trait BasicBlocks {
 
     def successors : List[BasicBlock] = {
       if (touched) {
-        resetFlag(TOUCHED)
+        resetFlag(DIRTYSUCCS)
         succs = if (isEmpty) Nil else {
           var res = lastInstruction match {
             case JUMP(whereto) => List(whereto)
@@ -467,12 +476,12 @@ trait BasicBlocks {
       succs.flatMap(findSucc).removeDuplicates
     }
 
-    /** Returns the precessors of this block, in the current 'code' chunk.
-     *  This is signifficant only if there are exception handlers, which live
-     *  in different code 'chunks' than the rest of the method.
-     */
+    /** Returns the precessors of this block.     */
     def predecessors: List[BasicBlock] = {
-      preds = code.blocks.iterator.filter (_.successors.contains(this)).toList
+      if (hasFlag(DIRTYPREDS)) {
+        resetFlag(DIRTYPREDS)
+        preds = code.blocks.iterator.filter (_.successors.contains(this)).toList
+      }
       preds
     }
 
@@ -510,7 +519,8 @@ trait BasicBlocks {
          else if (hasFlag(IGNORING)) " <ignore> "
          else if (hasFlag(EX_HEADER)) " <exheader> "
          else if (hasFlag(CLOSED)) " <closed> "
-         else if (hasFlag(TOUCHED)) " <touched> "
+         else if (hasFlag(DIRTYSUCCS)) " <dirtysuccs> "
+         else if (hasFlag(DIRTYPREDS)) " <dirtypreds> "
          else ""
       ))
   }
@@ -530,6 +540,9 @@ object BBFlags {
   /** This block is closed. No new instructions can be added. */
   final val CLOSED      = 0x00000008
 
-  /** This block has been changed, cached results are recomputed. */
-  final val TOUCHED     = 0x00000010
+  /** Code has been changed, recompute successors. */
+  final val DIRTYSUCCS     = 0x00000010
+
+  /** Code has been changed, recompute predecessors. */
+  final val DIRTYPREDS  = 0x00000020
 }
