@@ -2,7 +2,12 @@
 <module relativePaths="true" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Scala" name="Scala">
-      <configuration />
+      <configuration>
+        <option name="takeFromSettings" value="true" />
+        <option name="isRelativeToProjectPath" value="true" />
+        <option name="myScalaCompilerJarPath" value="build/locker/classes/compiler lib/fjbg.jar lib/msil.jar" />
+        <option name="myScalaSdkJarPath" value="build/locker/classes/library" />
+      </configuration>
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">

@@ -56,7 +56,6 @@
   </component>
   <component name="CompilerConfiguration">
     <option name="DEFAULT_COMPILER" value="Javac" />
-    <option name="DEPLOY_AFTER_MAKE" value="0" />
     <resourceExtensions>
       <entry name=".+\.(properties|xml|html|dtd|tld)" />
       <entry name=".+\.(gif|png|jpeg|jpg)" />
@@ -1506,6 +1505,14 @@
         <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/scala-compiler.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/scala-library.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Fjbg-Msil">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
+        <root url="jar://$PROJECT_DIR$/lib/fjbg.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
