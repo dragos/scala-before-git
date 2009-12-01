@@ -19,22 +19,39 @@ import scala.collection.{mutable, immutable}
 abstract class VerificationTypes {
   val global: Global
   import global._
+  import icodes._
 
   /** The lattice of ICode types.
    */
-  object typeLattice extends CompleteLattice {
+  object verificationTypeLattice extends CompleteLattice {
     type Elem = icodes.TypeKind
 
     val Object = icodes.REFERENCE(global.definitions.ObjectClass)
     val All    = icodes.REFERENCE(global.definitions.NothingClass)
 
-    def top    = Object
-    def bottom = All
+    case class VerificationType(name: String)
+
+    case object Top extends VerificationType("Top")
+    case object Int extends VerificationType("Int")
+    case object Float extends VerificationType("Float")
+    case object Long extends VerificationType("Long")
+    case object Double extends VerificationType("Double")
+    case object UninitializedThis(pos: (BasicBlock, Int)) extends VerificationType("uninitializedThis" + pos)
+    case class ReferenceType(cls: Symbol) extends VerificationType("ReferenceType(" + cls.fullNameString + ")")
+    case object NullType extends VerificationType("NullType")
+
+    def top    = Top
+    def bottom = NullType // not really a bottom type, but won't be used in this analysis
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
-      if (a eq bottom) b
-      else if (b eq bottom) a
-      else icodes.lub(a, b)
+      if (this == that) this else (this, that) match {
+        case (Top, _) => that
+        case (_, Top) => this
+        case (ReferenceType(cls1), ReferenceType(cls2)) =>
+          ReferenceType(cls1.tpe.lub(cls2))
+        case (UninitializedThis(p1), UninitializedThis(p2)) if p1 == p2 => this
+        case (NullType, ReferenceType(_)) | (ReferenceType(_), NullType) => NullType
+      }
   }
 
   /** The lattice of type stacks. It is a straight forward extension of
@@ -42,11 +59,13 @@ abstract class VerificationTypes {
    */
   object typeStackLattice extends CompleteLattice {
     import icodes._
-    type Elem = TypeStack
+    import verificationTypeLattice.{VerificationType, ReferenceType}
+    type Elem = List[VerificationType]
 
-    override val top    = new TypeStack
-    override val bottom = new TypeStack
-    val exceptionHandlerStack: TypeStack = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
+    override val top: Elem    = List()
+    override val bottom: Elem = List()
+
+    val exceptionHandlerStack: Elem = List(ReferenceType(definitions.AnyRefClass))
 
     def lub2(exceptional: Boolean)(s1: TypeStack, s2: TypeStack) = {
       if (s1 eq bottom) s2
