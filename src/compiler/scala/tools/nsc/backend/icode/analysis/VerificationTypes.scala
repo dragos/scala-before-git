@@ -24,102 +24,122 @@ abstract class VerificationTypes {
   /** The lattice of ICode types.
    */
   object verificationTypeLattice extends CompleteLattice {
-    type Elem = icodes.TypeKind
+    type Elem = VerificationType
 
     val Object = icodes.REFERENCE(global.definitions.ObjectClass)
     val All    = icodes.REFERENCE(global.definitions.NothingClass)
 
-    case class VerificationType(name: String)
+    abstract class VerificationType(name: String)
 
     case object Top extends VerificationType("Top")
     case object Int extends VerificationType("Int")
     case object Float extends VerificationType("Float")
     case object Long extends VerificationType("Long")
     case object Double extends VerificationType("Double")
-    case object UninitializedThis(pos: (BasicBlock, Int)) extends VerificationType("uninitializedThis" + pos)
+    case class  UninitializedThis(pos: (BasicBlock, Int)) extends VerificationType("uninitializedThis" + pos)
     case class ReferenceType(cls: Symbol) extends VerificationType("ReferenceType(" + cls.fullNameString + ")")
     case object NullType extends VerificationType("NullType")
+
+
+    /** A map from scala primitive Types to ICode TypeKinds */
+    lazy val primitiveTypeMap: collection.Map[Symbol, TypeKind] = {
+      import definitions._
+      collection.Map(
+        UnitClass     -> Top,
+        BooleanClass  -> Int,
+        CharClass     -> Int,
+        ByteClass     -> Int,
+        ShortClass    -> Int,
+        IntClass      -> Int,
+        LongClass     -> Long,
+        FloatClass    -> Float,
+        DoubleClass   -> Double
+      )
+    }
 
     def top    = Top
     def bottom = NullType // not really a bottom type, but won't be used in this analysis
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
-      if (this == that) this else (this, that) match {
-        case (Top, _) => that
-        case (_, Top) => this
+      if (a == b) a else (a, b) match {
+        case (Top, _) | (_, Top) => Top
         case (ReferenceType(cls1), ReferenceType(cls2)) =>
-          ReferenceType(cls1.tpe.lub(cls2))
-        case (UninitializedThis(p1), UninitializedThis(p2)) if p1 == p2 => this
+          ReferenceType(global.lub(cls1.tpe :: cls2.tpe :: Nil).typeSymbol)
+        case (UninitializedThis(p1), UninitializedThis(p2)) if p1 == p2 => a
         case (NullType, ReferenceType(_)) | (ReferenceType(_), NullType) => NullType
       }
+
+    def verificationType(tp: TypeKind): VerificationType = tp match {
+      case BOOLEAN | BYTE | SHORT | CHAR | INT => Int
+      case LONG => Long
+      case FLOAT => Float
+      case DOUBLE => Double
+      case REFERENCE(cls) => ReferenceType(cls)
+    }
+
+    def verificationType(tpe: Type): VerificationType = tpe match {
+      case TypeRef(_, sym, args) =>
+        primitiveTypeMap.getOrElse(sym, ReferenceType(sym))
+
+    }
   }
 
   /** The lattice of type stacks. It is a straight forward extension of
    *  the type lattice (lub is pairwise lub of the list elements).
    */
   object typeStackLattice extends CompleteLattice {
-    import icodes._
     import verificationTypeLattice.{VerificationType, ReferenceType}
-    type Elem = List[VerificationType]
+    type Elem = immutable.Stack[VerificationType]
 
-    override val top: Elem    = List()
-    override val bottom: Elem = List()
+    override val top: Elem    = immutable.Stack[VerificationType]()
+    override val bottom: Elem = immutable.Stack[VerificationType]()
 
-    val exceptionHandlerStack: Elem = List(ReferenceType(definitions.AnyRefClass))
+    val exceptionHandlerStack: Elem = {
+      val s = new immutable.Stack[VerificationType]
+      s.push(ReferenceType(definitions.AnyRefClass))
+    }
 
-    def lub2(exceptional: Boolean)(s1: TypeStack, s2: TypeStack) = {
+    def lub2(exceptional: Boolean)(s1: Elem, s2: Elem): immutable.Stack[VerificationType] = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
       else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack")
       else {
-//        if (s1.length != s2.length)
-//          throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
-        new TypeStack((s1.types, s2.types).zipped map icodes.lub)
+        val tps = (s1, s2).zipped map verificationTypeLattice.lub2(exceptional)
+        (new immutable.Stack[VerificationType]).pushAll(tps.reverse)
       }
     }
   }
 
-  /** A map which returns the bottom type for unfound elements */
-  class VarBinding extends mutable.HashMap[icodes.Local, icodes.TypeKind] {
-    override def get(l: icodes.Local) = super.get(l) match {
-      case Some(t) => Some(t)
-      case None    => Some(typeLattice.bottom)
-    }
 
-    def this(o: VarBinding) = {
-      this()
-      this ++= o
-    }
-  }
-
+  type VarBinding = mutable.HashMap[icodes.Local, verificationTypeLattice.Elem]
+  
   /** The type flow lattice contains a binding from local variable
    *  names to types and a type stack.
    */
   object typeFlowLattice extends CompleteLattice {
     import icodes._
-    type Elem = IState[VarBinding, icodes.TypeStack]
+    type Elem = IState[VarBinding, typeStackLattice.Elem]
 
     override val top    = new Elem(new VarBinding, typeStackLattice.top)
     override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
-
-//    var lubs = 0
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) = {
       val IState(env1, s1) = a
       val IState(env2, s2) = b
 
-//      lubs += 1
-
       val resultingLocals = new VarBinding
 
       for (binding1 <- env1.iterator) {
-        val tp2 = env2(binding1._1)
-        resultingLocals += ((binding1._1, typeLattice.lub2(exceptional)(binding1._2, tp2)))
+        env2.get(binding1._1) match {
+          case Some(tp2) =>
+            resultingLocals += ((binding1._1, verificationTypeLattice.lub2(exceptional)(binding1._2, tp2)))
+          case None =>
+            resultingLocals += ((binding1._1, verificationTypeLattice.top))
+        }
       }
 
-      for (binding2 <- env2.iterator if resultingLocals(binding2._1) eq typeLattice.bottom) {
-        val tp1 = env1(binding2._1)
-        resultingLocals += ((binding2._1, typeLattice.lub2(exceptional)(binding2._2, tp1)))
+      for (binding2 <- env2.iterator if !resultingLocals.isDefinedAt(binding2._1)) {
+        resultingLocals += ((binding2._1, verificationTypeLattice.top))
       }
 
       IState(resultingLocals,
@@ -131,6 +151,7 @@ abstract class VerificationTypes {
   val timer = new Timer
 
   class MethodTFA extends DataFlowAnalysis[typeFlowLattice.type] {
+    import verificationTypeLattice._
     import icodes._
     import icodes.opcodes._
 
@@ -154,34 +175,11 @@ abstract class VerificationTypes {
 
         // start block has var bindings for each of its parameters
         val entryBindings = new VarBinding
-        m.params.foreach(p => entryBindings += ((p, p.kind)))
+        m.params.foreach(p => entryBindings += ((p, verificationType(p.kind))))
         in(m.code.startBlock) = lattice.IState(entryBindings, typeStackLattice.bottom)
 
         m.exh foreach { e =>
           in(e.startBlock) = lattice.IState(in(e.startBlock).vars, typeStackLattice.exceptionHandlerStack)
-        }
-      }
-    }
-
-    /** reinitialize the analysis, keeping around solutions from a previous run. */
-    def reinit(m: icodes.IMethod) {
-      if ((this.method eq null) || (this.method.symbol != m.symbol))
-        init(m)
-      else reinit {
-        for (b <- m.code.blocks; if !in.isDefinedAt(b)) {
-          for (p <- b.predecessors) {
-            if (out.isDefinedAt(p)) {
-              in(b) = out(p)
-              worklist += p
-            }
-/*            else
-              in(b)  = typeFlowLattice.bottom
-*/          }
-          out(b) = typeFlowLattice.bottom
-        }
-        for (exh <- m.exh; if !in.isDefinedAt(exh.startBlock)) {
-          worklist += exh.startBlock
-          in(exh.startBlock) = lattice.IState(in(exh.startBlock).vars, typeStackLattice.exceptionHandlerStack)
         }
       }
     }
