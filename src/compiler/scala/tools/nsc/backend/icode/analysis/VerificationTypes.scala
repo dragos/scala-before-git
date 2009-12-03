@@ -29,20 +29,25 @@ abstract class VerificationTypes {
     val Object = icodes.REFERENCE(global.definitions.ObjectClass)
     val All    = icodes.REFERENCE(global.definitions.NothingClass)
 
-    abstract class VerificationType(name: String)
+    abstract class VerificationType
 
-    case object Top extends VerificationType("Top")
-    case object Int extends VerificationType("Int")
-    case object Float extends VerificationType("Float")
-    case object Long extends VerificationType("Long")
-    case object Double extends VerificationType("Double")
-    case class  UninitializedThis(pos: (BasicBlock, Int)) extends VerificationType("uninitializedThis" + pos)
-    case class ReferenceType(cls: Symbol) extends VerificationType("ReferenceType(" + cls.fullNameString + ")")
-    case object NullType extends VerificationType("NullType")
+    case object Top extends VerificationType
+    case object Bottom extends VerificationType
+    case object Int extends VerificationType
+    case object Float extends VerificationType
+    case object Long extends VerificationType
+    case object Double extends VerificationType
+    case class  Uninitialized(pos: (BasicBlock, Int)) extends VerificationType
+    case object UninitializedThis extends VerificationType
+    case class  ReferenceType(cls: Symbol) extends VerificationType
+    case class  ArrayOf(v: VerificationType) extends VerificationType
+    case object NullType extends VerificationType
 
+    val AnyRefType = ReferenceType(definitions.AnyRefClass)
+    val StringBufferType = ReferenceType(definitions.getClass("scala.collection.mutable.StringBuilder"))
 
     /** A map from scala primitive Types to ICode TypeKinds */
-    lazy val primitiveTypeMap: collection.Map[Symbol, TypeKind] = {
+    lazy val primitiveTypeMap: collection.Map[Symbol, VerificationType] = {
       import definitions._
       collection.Map(
         UnitClass     -> Top,
@@ -58,23 +63,40 @@ abstract class VerificationTypes {
     }
 
     def top    = Top
-    def bottom = NullType // not really a bottom type, but won't be used in this analysis
+    def bottom = Bottom
 
+    /** The least upper bound of two types.  */
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
       if (a == b) a else (a, b) match {
+        case (Bottom, _) => b
+        case (_, Bottom) => a
         case (Top, _) | (_, Top) => Top
         case (ReferenceType(cls1), ReferenceType(cls2)) =>
           ReferenceType(global.lub(cls1.tpe :: cls2.tpe :: Nil).typeSymbol)
-        case (UninitializedThis(p1), UninitializedThis(p2)) if p1 == p2 => a
-        case (NullType, ReferenceType(_)) | (ReferenceType(_), NullType) => NullType
+        case (Uninitialized(p1), Uninitialized(p2)) if p1 == p2 => a
+        case (NullType, ReferenceType(_)) => b
+        case (ReferenceType(_), NullType) => a
+        case (ArrayOf(e1), ArrayOf(e2)) =>
+          lub2(exceptional)(e1, e2) match {
+            case Top => AnyRefType
+            case e => ArrayOf(e)
+          }
+        case (ArrayOf(_), ReferenceType(_)) => AnyRefType
+        case (ReferenceType(_), ArrayOf(_)) => AnyRefType
+        case _ =>
+          println("emitting Top lub of " + a + ", " + b)
+          Top
       }
 
-    def verificationType(tp: TypeKind): VerificationType = tp match {
-      case BOOLEAN | BYTE | SHORT | CHAR | INT => Int
+    implicit def verificationType(tp: TypeKind): VerificationType = tp match {
+      case BOOL | BYTE | SHORT | CHAR | INT => Int
       case LONG => Long
       case FLOAT => Float
       case DOUBLE => Double
       case REFERENCE(cls) => ReferenceType(cls)
+      case ARRAY(e) => ArrayOf(verificationType(e))
+      case ConcatClass => StringBufferType
+      case UNIT => Predef.error("found unit")
     }
 
     def verificationType(tpe: Type): VerificationType = tpe match {
@@ -89,23 +111,24 @@ abstract class VerificationTypes {
    */
   object typeStackLattice extends CompleteLattice {
     import verificationTypeLattice.{VerificationType, ReferenceType}
-    type Elem = immutable.Stack[VerificationType]
+    type Elem = TypeStack[VerificationType]
 
-    override val top: Elem    = immutable.Stack[VerificationType]()
-    override val bottom: Elem = immutable.Stack[VerificationType]()
+    override val top: Elem    = new TypeStack[VerificationType]
+    override val bottom: Elem = new TypeStack[VerificationType]
 
     val exceptionHandlerStack: Elem = {
-      val s = new immutable.Stack[VerificationType]
+      val s = new TypeStack[VerificationType]
       s.push(ReferenceType(definitions.AnyRefClass))
     }
 
-    def lub2(exceptional: Boolean)(s1: Elem, s2: Elem): immutable.Stack[VerificationType] = {
+    def lub2(exceptional: Boolean)(s1: Elem, s2: Elem): TypeStack[VerificationType] = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
+      else if (exceptional) exceptionHandlerStack
       else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack")
       else {
-        val tps = (s1, s2).zipped map verificationTypeLattice.lub2(exceptional)
-        (new immutable.Stack[VerificationType]).pushAll(tps.reverse)
+        val tps = (s1.types, s2.types).zipped map verificationTypeLattice.lub2(exceptional)
+        (new TypeStack[VerificationType]).pushAll(tps.reverse)
       }
     }
   }
@@ -134,23 +157,24 @@ abstract class VerificationTypes {
           case Some(tp2) =>
             resultingLocals += ((binding1._1, verificationTypeLattice.lub2(exceptional)(binding1._2, tp2)))
           case None =>
-            resultingLocals += ((binding1._1, verificationTypeLattice.top))
+            resultingLocals += ((binding1._1, verificationTypeLattice.bottom))
         }
       }
 
       for (binding2 <- env2.iterator if !resultingLocals.isDefinedAt(binding2._1)) {
-        resultingLocals += ((binding2._1, verificationTypeLattice.top))
+        resultingLocals += ((binding2._1, verificationTypeLattice.bottom))
       }
 
-      IState(resultingLocals,
-        if (exceptional) typeStackLattice.exceptionHandlerStack
-        else typeStackLattice.lub2(exceptional)(a.stack, b.stack))
+      if (exceptional) IState(resultingLocals, typeStackLattice.exceptionHandlerStack)
+      else if (a eq bottom) b
+      else if (b eq bottom) a
+      else IState(resultingLocals, typeStackLattice.lub2(exceptional)(a.stack, b.stack))
     }
   }
 
   val timer = new Timer
 
-  class MethodTFA extends DataFlowAnalysis[typeFlowLattice.type] {
+  class InferTypes extends DataFlowAnalysis[typeFlowLattice.type] {
     import verificationTypeLattice._
     import icodes._
     import icodes.opcodes._
@@ -205,202 +229,220 @@ abstract class VerificationTypes {
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
-      b.foldLeft(in)(interpret)
-    }
+      /** Abstract interpretation for one instruction. */      
+      def interpret(in: typeFlowLattice.Elem, instr: (Instruction, Int)): typeFlowLattice.Elem = {
+        import verificationTypeLattice.verificationType
+        def pop2(st: mutable.Stack[VerificationType]) = (st.pop, st.pop)
+        def pop(st: mutable.Stack[VerificationType], n: Int) = {
+          var m = n
+          while (m > 0) { st.pop; m -= 1 }
+        }
+        
+        val (i, idx) = instr
 
-    /** Abstract interpretation for one instruction. */
-    def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
-      val out = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
-      val bindings = out.vars
-      val stack = out.stack
+        val out = lattice.IState(in.vars.clone, new TypeStack(in.stack))
+        val bindings = out.vars
+        val stack = out.stack
 
-      if (settings.debug.value) {
-        Console.println("[before] Stack: " + stack);
-        Console.println(i);
-      }
-      i match {
+        if (settings.debug.value) {
+          Console.println("[before] locals: " + bindings)
+          Console.println("[before] Stack: " + stack);
+          Console.println(i);
+        }
+        i match {
 
-        case THIS(clasz) =>
-          stack push toTypeKind(clasz.tpe)
+          case THIS(clasz) =>
+            stack push verificationType(clasz.tpe)
 
-        case CONSTANT(const) =>
-          stack push toTypeKind(const.tpe)
+          case CONSTANT(const) =>
+            stack push verificationType(const.tpe)
 
-        case LOAD_ARRAY_ITEM(kind) =>
-          stack.pop2 match {
-            case (idxKind, ARRAY(elem)) =>
-              assert(idxKind == INT || idxKind == CHAR || idxKind == SHORT || idxKind == BYTE)
-              stack.push(elem)
-            case (_, _) =>
-              stack.push(kind)
-          }
-
-        case LOAD_LOCAL(local) =>
-          val t = bindings(local)
-          stack push (if (t == typeLattice.bottom) local.kind  else t)
-
-        case LOAD_FIELD(field, isStatic) =>
-          if (!isStatic)
-            stack.pop
-          stack push toTypeKind(field.tpe)
-
-        case LOAD_MODULE(module) =>
-          stack push toTypeKind(module.tpe)
-
-        case STORE_ARRAY_ITEM(kind) =>
-          stack.pop3
-
-        case STORE_LOCAL(local) =>
-          val t = stack.pop
-          bindings += (local -> t)
-
-        case STORE_THIS(_) =>
-          stack.pop
-
-        case STORE_FIELD(field, isStatic) =>
-          if (isStatic)
-            stack.pop
-          else
+          case LOAD_ARRAY_ITEM(kind) =>
             stack.pop2
+            stack.push(verificationType(kind))
 
-        case CALL_PRIMITIVE(primitive) =>
-          primitive match {
-            case Negation(kind) =>
-              stack.pop; stack.push(kind)
-            case Test(_, kind, zero) =>
-              stack.pop
-              if (!zero) stack.pop
-              stack push BOOL;
-            case Comparison(_, _) =>
-              stack.pop2
-              stack push INT
-
-            case Arithmetic(op, kind) =>
-              stack.pop
-              if (op != NOT)
-                stack.pop
-              val k = kind match {
-                case BYTE | SHORT | CHAR => INT
-                case _ => kind
-              }
-              stack push k
-
-            case Logical(op, kind) =>
-              stack.pop2
-              stack push kind
-
-            case Shift(op, kind) =>
-              stack.pop2
-              stack push kind
-
-            case Conversion(src, dst) =>
-              stack.pop
-              stack push dst
-
-            case ArrayLength(kind) =>
-              stack.pop
-              stack push INT
-
-            case StartConcat =>
-              stack.push(ConcatClass)
-
-            case EndConcat =>
-              stack.pop
-              stack.push(STRING)
-
-            case StringConcat(el) =>
-              stack.pop2
-              stack push ConcatClass
-          }
-
-        case CALL_METHOD(method, style) => style match {
-          case Dynamic | InvokeDynamic =>
-            stack.pop(1 + method.info.paramTypes.length)
-            stack.push(toTypeKind(method.info.resultType))
-
-          case Static(onInstance) =>
-            if (onInstance) {
-              stack.pop(1 + method.info.paramTypes.length)
-              if (!method.isConstructor)
-                stack.push(toTypeKind(method.info.resultType));
-            } else {
-              stack.pop(method.info.paramTypes.length)
-              stack.push(toTypeKind(method.info.resultType))
+          case LOAD_LOCAL(local) =>
+            bindings.get(local) match {
+              case Some(t) => stack.push(t)
+              case None => stack.push(verificationTypeLattice.bottom)
             }
 
-          case SuperCall(mix) =>
-            stack.pop(1 + method.info.paramTypes.length)
-            stack.push(toTypeKind(method.info.resultType))
+          case LOAD_FIELD(field, isStatic) =>
+            if (!isStatic) stack.pop
+            stack.push(verificationType(field.tpe))
+
+          case LOAD_MODULE(module) =>
+            stack.push(verificationType(module.tpe))
+
+          case STORE_ARRAY_ITEM(kind) =>
+            stack.pop(3)
+
+          case STORE_LOCAL(local) =>
+            val t = stack.pop
+            bindings += (local -> t)
+
+          case STORE_THIS(_) =>
+            stack.pop
+
+          case STORE_FIELD(field, isStatic) =>
+            if (isStatic)
+              stack.pop
+            else
+              stack.pop2
+
+          case CALL_PRIMITIVE(primitive) =>
+            primitive match {
+              case Negation(kind) =>
+                stack.pop; stack.push(kind)
+              case Test(_, kind, zero) =>
+                stack.pop
+                if (!zero) stack.pop
+                stack push Int;
+              case Comparison(_, _) =>
+                stack.pop2
+                stack push Int
+
+              case Arithmetic(op, kind) =>
+                stack.pop
+                if (op != NOT)
+                  stack.pop
+                val k = kind match {
+                  case BYTE | SHORT | CHAR => Int
+                  case _ => verificationType(kind)
+                }
+                stack push k
+
+              case Logical(op, kind) =>
+                stack.pop2
+                stack push kind
+
+              case Shift(op, kind) =>
+                stack.pop2
+                stack push kind
+
+              case Conversion(src, dst) =>
+                stack.pop
+                stack push dst
+
+              case ArrayLength(kind) =>
+                stack.pop
+                stack push Int
+
+              case StartConcat =>
+                stack.push(ConcatClass)
+
+              case EndConcat =>
+                stack.pop
+                stack.push(STRING)
+
+              case StringConcat(el) =>
+                stack.pop2
+                stack push ConcatClass
+            }
+
+          case CALL_METHOD(method, style) => style match {
+            case Dynamic | InvokeDynamic =>
+              stack.pop(1 + method.info.paramTypes.length)
+              if (method.info.resultType.typeSymbol != definitions.UnitClass)
+                stack.push(verificationType(method.info.resultType))
+
+            case Static(onInstance) =>
+              if (onInstance) {
+                stack.pop(method.info.paramTypes.length)
+                val uninit = stack.pop // (maybe uninitialized) instance
+                if (method.info.resultType.typeSymbol != definitions.UnitClass) {
+                  val result = verificationType(toTypeKind(method.info.resultType))
+                  if (method.isConstructor)
+                    stack.map(t => if (t == uninit) result else t) // replace its occurences by the proper reference type
+                  else
+                    stack.push(result)
+                }
+              } else {
+                stack.pop(method.info.paramTypes.length)
+                if (method.info.resultType.typeSymbol != definitions.UnitClass)
+                  stack.push(toTypeKind(method.info.resultType))
+              }
+
+            case SuperCall(mix) =>
+              stack.pop(1 + method.info.paramTypes.length)
+              if (method.info.resultType.typeSymbol != definitions.UnitClass)
+                stack.push(toTypeKind(method.info.resultType))
+          }
+
+          case BOX(kind) =>
+            stack.pop
+            stack.push(AnyRefType)
+
+          case UNBOX(kind) =>
+            stack.pop
+            stack.push(kind)
+
+          case NEW(kind) =>
+            stack.push(Uninitialized((b, idx)))
+
+          case CREATE_ARRAY(elem, dims) =>
+            stack.pop(dims)
+            stack.push(ArrayOf(verificationType(elem)))
+
+          case IS_INSTANCE(tpe) =>
+            stack.pop
+            stack.push(Int)
+
+          case CHECK_CAST(tpe) =>
+            stack.pop
+            stack.push(verificationType(tpe))
+
+          case SWITCH(tags, labels) =>
+            stack.pop
+
+          case JUMP(whereto) =>
+            ()
+
+          case CJUMP(success, failure, cond, kind) =>
+            stack.pop(2)
+
+          case CZJUMP(success, failure, cond, kind) =>
+            stack.pop
+
+          case RETURN(kind) =>
+            if (kind != UNIT)
+              stack.pop;
+
+          case THROW() =>
+            stack.pop
+
+          case DROP(kind) =>
+            stack.pop
+
+          case DUP(kind) =>
+            stack.push(stack.head)
+
+          case MONITOR_ENTER() =>
+            stack.pop
+
+          case MONITOR_EXIT() =>
+            stack.pop
+
+          case SCOPE_ENTER(_) =>
+            ()
+
+          case SCOPE_EXIT(l) =>
+            bindings.removeKey(l)
+
+          case LOAD_EXCEPTION() =>
+            stack.clear
+            stack.push(AnyRefType)
+
+          case _ =>
+            dump
+            abort("Unknown instruction: " + i)
+
         }
+        out
+      } // interpret
 
-        case BOX(kind) =>
-          stack.pop
-          stack.push(BOXED(kind))
-
-        case UNBOX(kind) =>
-          stack.pop
-          stack.push(kind)
-
-        case NEW(kind) =>
-          stack.push(kind)
-
-        case CREATE_ARRAY(elem, dims) =>
-          stack.pop(dims)
-          stack.push(ARRAY(elem))
-
-        case IS_INSTANCE(tpe) =>
-          stack.pop
-          stack.push(BOOL)
-
-        case CHECK_CAST(tpe) =>
-          stack.pop
-          stack.push(tpe)
-
-        case SWITCH(tags, labels) =>
-          stack.pop
-
-        case JUMP(whereto) =>
-          ()
-
-        case CJUMP(success, failure, cond, kind) =>
-          stack.pop2
-
-        case CZJUMP(success, failure, cond, kind) =>
-          stack.pop
-
-        case RETURN(kind) =>
-          if (kind != UNIT)
-            stack.pop;
-
-        case THROW() =>
-          stack.pop
-
-        case DROP(kind) =>
-          stack.pop
-
-        case DUP(kind) =>
-          stack.push(stack.head)
-
-        case MONITOR_ENTER() =>
-          stack.pop
-
-        case MONITOR_EXIT() =>
-          stack.pop
-
-        case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
-          ()
-
-        case LOAD_EXCEPTION() =>
-          stack.pop(stack.length)
-          stack.push(typeLattice.Object)
-
-        case _ =>
-          dump
-          abort("Unknown instruction: " + i)
-
-      }
-      out
-    } // interpret
+      b.zipWithIndex.foldLeft(in)(interpret)
+    }
   }
 
   class Timer {

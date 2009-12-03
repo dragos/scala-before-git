@@ -91,6 +91,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   } with CopyPropagation
 
+  object verificationTypes extends {
+    val global: Global.this.type = Global.this
+  } with VerificationTypes
+
   /** Icode verification */
   object checkers extends {
     val global: Global.this.type = Global.this

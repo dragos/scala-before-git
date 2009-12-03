@@ -419,7 +419,7 @@ abstract class Inliners extends SubComponent {
      * Note:
      *    - synthetic private members are made public in this pass.
      */
-    def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack): Boolean = {
+    def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack[TypeKind]): Boolean = {
       def makePublic(f: Symbol): Boolean = 
         if ((callee.sourceFile ne null) 
             && (f.hasFlag(Flags.SYNTHETIC | Flags.PARAMACCESSOR))) {

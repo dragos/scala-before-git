@@ -622,6 +622,7 @@ abstract class GenJVM extends SubComponent {
         genCode(m)
         if (emitVars)
           genLocalVariableTable(m, jcode);
+        if (settings.target.value == "jvm-1.6") addStackMapTable(jmethod, m)
       }
       
       addGenericSignature(jmethod, m.symbol, clasz.symbol)
@@ -660,6 +661,18 @@ abstract class GenJVM extends SubComponent {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == annotSym => true
         case _ => false
       }}
+    }
+
+    private def addStackMapTable(jmethod: JMethod, m: IMethod) {
+      val a = new global.verificationTypes.InferTypes
+      println("StackMapTable for " + m)
+      a.init(m)
+      a.run
+      for (b <- m.code.blocks; val in = a.in(b)) {
+        println(b)
+        println("\tlocals: " + in.vars)
+        println("\tstack: " + in.stack.types.mkString("[", ", ", "]"))
+      }
     }
 
     private def isClosureApply(sym: Symbol): Boolean = {

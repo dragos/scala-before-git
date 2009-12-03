@@ -40,13 +40,13 @@ abstract class TypeFlowAnalysis {
    */
   object typeStackLattice extends CompleteLattice {
     import icodes._
-    type Elem = TypeStack
+    type Elem = TypeStack[TypeKind]
 
-    override val top    = new TypeStack
-    override val bottom = new TypeStack
-    val exceptionHandlerStack: TypeStack = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
+    override val top    = new TypeStack[TypeKind]
+    override val bottom = new TypeStack[TypeKind]
+    val exceptionHandlerStack: TypeStack[TypeKind] = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
 
-    def lub2(exceptional: Boolean)(s1: TypeStack, s2: TypeStack) = {
+    def lub2(exceptional: Boolean)(s1: TypeStack[TypeKind], s2: TypeStack[TypeKind]) = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
       else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack") 
@@ -76,7 +76,7 @@ abstract class TypeFlowAnalysis {
    */
   object typeFlowLattice extends CompleteLattice {
     import icodes._
-    type Elem = IState[VarBinding, icodes.TypeStack]
+    type Elem = IState[VarBinding, icodes.TypeStack[TypeKind]]
 
     override val top    = new Elem(new VarBinding, typeStackLattice.top)
     override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)

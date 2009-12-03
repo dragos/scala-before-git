@@ -33,7 +33,7 @@ trait Members { self: ICodes =>
     var startBlock: BasicBlock = null
 
     /** The stack produced by this method */
-    var producedStack: TypeStack = null
+    var producedStack: TypeStack[TypeKind] = null
     
     private var currentLabel: Int = 0
     private var _touched = false

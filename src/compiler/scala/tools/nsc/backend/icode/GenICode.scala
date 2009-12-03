@@ -9,7 +9,8 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
+import scala.collection.mutable
+import mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.util.Position
 import scala.annotation.switch
@@ -362,7 +363,7 @@ abstract class GenICode extends SubComponent  {
       thenCtx = genLoad(thenp, thenCtx, resKind)
       elseCtx = genLoad(elsep, elseCtx, resKind)
       
-      assert(!settings.debug.value || expectedType == UNIT, 
+      assert(!settings.debug.value || !(hasUnitBranch && expectedType != UNIT), 
         "I produce UNIT in a context where " + expectedType + " is expected!")
 
       thenCtx.bb.emitOnly(JUMP(contCtx.bb))
@@ -381,20 +382,23 @@ abstract class GenICode extends SubComponent  {
         for (CaseDef(pat, _, body) <- catches.reverse) yield {
           def genWildcardHandler(sym: Symbol): (Symbol, TypeKind, Context => Context) = 
             (sym, kind, ctx => { 
+              ctx.enterScope
               ctx.bb.emit(DROP(REFERENCE(sym)))
-              genLoad(body, ctx, kind)
+              genLoad(body, ctx, kind).exitScope
             })
           
           pat match {            
             case Typed(Ident(nme.WILDCARD), tpt)  => genWildcardHandler(tpt.tpe.typeSymbol)
             case Ident(nme.WILDCARD)              => genWildcardHandler(ThrowableClass)
             case Bind(name, _)                    =>
-              val exception = ctx.method addLocal new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false)
-
               (pat.symbol.tpe.typeSymbol, kind, {
                 ctx: Context =>
+                  ctx.enterScope
+                  val exception = ctx.method addLocal new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false)
+                  ctx.scope.add(exception)
+                  ctx.bb.emit(SCOPE_ENTER(exception), pat.pos)
                   ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
-                  genLoad(body, ctx, kind);
+                  genLoad(body, ctx, kind).exitScope
               })
           }
         }
@@ -501,9 +505,9 @@ abstract class GenICode extends SubComponent  {
           if (rhs != EmptyTree)
             ctx1 = genLoad(rhs, ctx, local.kind);
 
-          ctx1.bb.emit(STORE_LOCAL(local), tree.pos)
           ctx1.scope.add(local)
           ctx1.bb.emit(SCOPE_ENTER(local))
+          ctx1.bb.emit(STORE_LOCAL(local), tree.pos)
           generatedType = UNIT
           ctx1
 
@@ -1761,15 +1765,20 @@ abstract class GenICode extends SubComponent  {
         new Context(this) setBasicBlock block
       }
 
-      def enterScope = {
+      def enterScope: this.type = {
         scope = new Scope(scope)
+        this
       }
 
-      def exitScope = {
-        if (bb.size > 0) {
+      def exitScope: this.type = {
+        if (bb.size > 0)
           scope.locals foreach { lv => bb.emit(SCOPE_EXIT(lv)) }
-        }
+//        } else {
+//          println("missed SCOPE_EXIT in " + bb + " for " + scope.locals)
+//          println("missed SCOPE_EXIT in " + bb + " for " + scope.locals)
+//        }
         scope = scope.outer
+        this
       }
 
       /** Create a new exception handler and adds it in the list
@@ -2112,23 +2121,23 @@ abstract class GenICode extends SubComponent  {
 
   /** Local variable scopes. Keep track of line numbers for debugging info. */
   class Scope(val outer: Scope) {
-    val locals: ListBuffer[Local] = new ListBuffer
+    val locals: mutable.Set[Local] = new mutable.LinkedHashSet[Local]
 
-    def add(l: Local) =
+    def add(l: Local) = 
       locals += l
-    
+
     def remove(l: Local) =
       locals -= l
       
     /** Return all locals that are in scope. */
-    def varsInScope: Buffer[Local] = outer.varsInScope.clone() ++= locals
+    def varsInScope: mutable.Set[Local] = outer.varsInScope.clone() ++= locals
     
     override def toString() = 
       outer.toString() + locals.mkString("[", ", ", "]")
-  }
+  }                                        
 
   object EmptyScope extends Scope(null) {
     override def toString() = "[]"
-    override def varsInScope: Buffer[Local] = new ListBuffer
+    override def varsInScope: mutable.Set[Local] = new mutable.LinkedHashSet[Local]
   }
 }

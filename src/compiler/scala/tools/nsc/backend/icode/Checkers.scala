@@ -61,10 +61,10 @@ abstract class Checkers {
     var method: IMethod = _
     var code: Code = _
 
-    val in: Map[BasicBlock, TypeStack] = new HashMap()
-    val out: Map[BasicBlock, TypeStack] = new HashMap()
+    val in: Map[BasicBlock, TypeStack[TypeKind]] = new HashMap()
+    val out: Map[BasicBlock, TypeStack[TypeKind]] = new HashMap()
 
-    val emptyStack = new TypeStack()
+    val emptyStack = new TypeStack[TypeKind]()
 
     val STRING        = REFERENCE(definitions.StringClass)
     val SCALA_ALL     = REFERENCE(definitions.NothingClass)
@@ -146,7 +146,7 @@ abstract class Checkers {
     def meet(bl: BasicBlock) {
       val preds = bl.predecessors
 
-      def meet2(s1: TypeStack, s2: TypeStack): TypeStack = {
+      def meet2(s1: TypeStack[TypeKind], s2: TypeStack[TypeKind]): TypeStack[TypeKind] = {
         if (s1 eq emptyStack) s2
         else if (s2 eq emptyStack) s1 
         else {
@@ -162,7 +162,7 @@ abstract class Checkers {
       }
     }
 
-    private var typeStack: TypeStack = null
+    private var typeStack: TypeStack[TypeKind] = null
     private var instruction: Instruction = null
     private var basicBlock: BasicBlock = null
 
@@ -170,7 +170,7 @@ abstract class Checkers {
      * Check the basic block to be type correct and return the
      * produced type stack.
      */
-    def check(b: BasicBlock, initial: TypeStack): TypeStack = {
+    def check(b: BasicBlock, initial: TypeStack[TypeKind]): TypeStack[TypeKind] = {
       log("** Checking block:\n" + b.fullString + " with initial stack:\n" + initial)
       var stack = new TypeStack(initial)
 
@@ -594,7 +594,7 @@ abstract class Checkers {
       Console.println("at: " + (buf.head.pos))
     }
 
-    def error(msg: String, stack: TypeStack) {
+    def error(msg: String, stack: TypeStack[TypeKind]) {
       error(msg + "\n type stack: " + stack)
     }
 
