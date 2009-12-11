@@ -62,9 +62,9 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
       val output = f(point, in(point))
 
       if ((lattice.bottom == out(point)) || output != out(point)) {
-//        Console.println("Output changed at " + point 
-//                        + " from: " + out(point) + " to: " + output 
-//                        + " for input: " + in(point) + " and they are different: " + (output != out(point)))
+//        Console.println("Output changed at " + point + " adding " + point.successors)
+                        //+ " from: " + out(point) + " to: " + output
+                        //+ " for input: " + in(point) + " and they are different: " + (output != out(point)))
         out(point) = output
         val succs = point.successors
         succs foreach { p =>

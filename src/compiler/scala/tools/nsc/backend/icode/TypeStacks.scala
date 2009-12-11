@@ -76,7 +76,7 @@ trait TypeStacks { self: ICodes =>
     
     def apply(n: Int): T = types(n)
 
-    /** Map f over elements of this stack, in place. */
+    /** In-place map f over elements of this stack. */
     def map(f: T => T): this.type = {
       types = types map f
       this

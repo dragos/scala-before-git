@@ -42,7 +42,6 @@ abstract class GenJVM extends SubComponent {
 
     def name = phaseName
     override def erasedTypes = true
-    object codeGenerator extends BytecodeGenerator
 
     override def run {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
@@ -57,6 +56,8 @@ abstract class GenJVM extends SubComponent {
       codeGenerator.genClass(cls)
     }
   }
+
+  object codeGenerator extends BytecodeGenerator
 
   /** Return the suffix of a class name */
   def moduleSuffix(sym: Symbol) =
@@ -110,7 +111,9 @@ abstract class GenJVM extends SubComponent {
 
     var innerClasses: Set[Symbol] = ListSet.empty // referenced inner classes
 
-    val fjbgContext = new FJBGContext(49, 0)
+    val majorVersion = if (settings.target.value == "jvm-1.6") 50 else 49
+    val minorVersion = 0
+    val fjbgContext = new FJBGContext(majorVersion, minorVersion)
 
     val emitSource = settings.debuginfo.level >= 1
     val emitLines  = settings.debuginfo.level >= 2
@@ -622,7 +625,6 @@ abstract class GenJVM extends SubComponent {
         genCode(m)
         if (emitVars)
           genLocalVariableTable(m, jcode);
-        if (settings.target.value == "jvm-1.6") addStackMapTable(jmethod, m)
       }
       
       addGenericSignature(jmethod, m.symbol, clasz.symbol)
@@ -661,18 +663,6 @@ abstract class GenJVM extends SubComponent {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == annotSym => true
         case _ => false
       }}
-    }
-
-    private def addStackMapTable(jmethod: JMethod, m: IMethod) {
-      val a = new global.verificationTypes.InferTypes
-      println("StackMapTable for " + m)
-      a.init(m)
-      a.run
-      for (b <- m.code.blocks; val in = a.in(b)) {
-        println(b)
-        println("\tlocals: " + in.vars)
-        println("\tstack: " + in.stack.types.mkString("[", ", ", "]"))
-      }
     }
 
     private def isClosureApply(sym: Symbol): Boolean = {
@@ -935,7 +925,7 @@ abstract class GenJVM extends SubComponent {
         if (settings.debug.value)
           log("Making labels for: " + method)
           
-        HashMap(bs map (_ -> jcode.newLabel) : _*)
+        HashMap((bs map (_ -> jcode.newLabel)) : _*)
       }
 
       isModuleInitialized = false
@@ -952,6 +942,104 @@ abstract class GenJVM extends SubComponent {
         case x :: Nil => nextBlock = null; genBlock(x)
         case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
       }
+
+      def addStackMapTable(jmethod: JMethod) {
+        import collection.mutable.ArrayBuffer
+        import JStackMapTableAttribute._
+        import JVerificationTypeInfo._
+        import verificationTypes.verificationTypeLattice._
+        import verificationTypes.typeFlowLattice
+
+        val a = new global.verificationTypes.InferTypes
+        val emptyVerificationStack = new Array[JVerificationTypeInfo](0)
+
+        /** Return an array buffer containing the corresponing classfile verification type for each local variable
+         *  found in the given binding.
+         */
+        def javaVerificationTypes(locals: global.verificationTypes.VarBinding): ArrayBuffer[JVerificationTypeInfo] = {
+          val sortedLocals = new ArrayBuffer[JVerificationTypeInfo]
+          var idx = 0;
+          // fill in the gaps with ITEM_Top
+          for (l <- locals.keysIterator.toSeq.sortWith(_.index < _.index)) {
+            while (idx < l.index) {
+              sortedLocals += ITEM_Top
+              idx += 1
+            }
+            sortedLocals += javaVerificationType(locals(l))
+            idx += 1
+          }
+          sortedLocals
+        }
+
+        def javaVerificationType(vt: VerificationType): JVerificationTypeInfo = vt match {
+          case Top | Bottom => ITEM_Top
+          case Int => ITEM_Integer
+          case Long => ITEM_Long
+          case Float => ITEM_Float
+          case Double => ITEM_Double
+          case tp @ ReferenceType(cls) => new JObjectVerificationTypeInfo(jclass.getConstantPool.addClass(tp.getSignature))
+          case tp @ ArrayOf(t) => new JObjectVerificationTypeInfo(jclass.getConstantPool.addClass(tp.getDescriptor))
+          case UninitializedThis => ITEM_UninitializedThis
+          case Uninitialized((bb, idx)) => new JUninitializedTypeInfo(labels(bb).getAnchor + idx)
+          case NullType => ITEM_Null
+        }
+
+        def appendOrChop(offset: Int,
+                         prev: verificationTypes.VarBinding,
+                         current: verificationTypes.VarBinding): Option[JStackMapFrame] = {
+          val prevLocals = javaVerificationTypes(prev)
+          val currentLocals = javaVerificationTypes(current)
+
+          if (currentLocals.startsWith(prevLocals)) {
+            val newLocals = currentLocals.drop(prevLocals.length)
+            if (newLocals.length <= 3)
+              Some(new JAppendFrame(offset, newLocals.toArray))
+            else
+              Some(new JFullFrame(offset, currentLocals.toArray, emptyVerificationStack))
+          } else if (prevLocals.startsWith(currentLocals)) {
+            val newLocals = prevLocals.drop(currentLocals.length)
+            if (newLocals.length <= 3)
+              Some(new JChopFrame(offset, newLocals.length))
+            else
+              Some(new JFullFrame(offset, currentLocals.toArray, emptyVerificationStack))
+          } else
+            None
+        }
+
+        def stackFrame(offset: Int, prev: typeFlowLattice.Elem, current: typeFlowLattice.Elem): JStackMapFrame = {
+          if (current.stack.length == 0) {
+            if (current.vars == prev.vars) new JSameFrame(offset)
+            else appendOrChop(offset, prev.vars, current.vars)
+                   .getOrElse(new JFullFrame(offset, javaVerificationTypes(current.vars).toArray, emptyVerificationStack))
+          } else // TODO: should special-case 1-element stacks
+            new JFullFrame(offset,
+              javaVerificationTypes(current.vars).toArray,
+              current.stack.types.reverse.map(javaVerificationType).toArray)
+        }
+
+        log("StackMapTable for " + m)
+        val stackMapTable = jmethod.getCode.getStackMapTable
+        a.init(m)
+        a.run
+        var prevFrame = a.in(m.code.startBlock)
+        var prevOffset = 0
+        for (b <- linearization.tail; val in = a.in(b)) {
+          log(b)
+          log("\tlocals: " + in.vars)
+          log("\tstack: " + in.stack.types.mkString("[", ", ", "]"))
+          val pc = labels(b).getAnchor
+          val offset = if (b == linearization.tail.head) // first frame
+            pc - prevOffset
+          else pc - prevOffset - 1
+//          println("prevOffset: " + prevOffset + " anchor: " + labels(b).getAnchor + " offset: " + offset)
+          val frame = stackFrame(offset, prevFrame, in)
+
+          stackMapTable.addFrame(frame)
+          prevOffset = pc                                              
+          prevFrame = in
+        }
+      }
+
 
     /** Generate exception handlers for the current method. */
     def genExceptionHandlers {
@@ -1555,6 +1643,7 @@ abstract class GenJVM extends SubComponent {
 
       if (this.method.exh != Nil)
         genExceptionHandlers;
+      if (settings.target.value == "jvm-1.6") addStackMapTable(jmethod)
     }
 
 
@@ -1688,48 +1777,6 @@ abstract class GenJVM extends SubComponent {
     ////////////////////// Utilities ////////////////////////
 
     /**
-     * <p>
-     *   Return the a name of this symbol that can be used on the Java
-     *   platform. It removes spaces from names.
-     * </p>
-     * <p>
-     *   Special handling: scala.Nothing and <code>scala.Null</code> are
-     *   <em>erased</em> to <code>scala.runtime.Nothing$</code> and
-     *   </code>scala.runtime.Null$</code>. This is needed because they are
-     *   not real classes, and they mean 'abrupt termination upon evaluation
-     *   of that expression' or <code>null</code> respectively. This handling is 
-     *   done already in <a href="../icode/GenIcode.html" target="contentFrame">
-     *   <code>GenICode</code></a>, but here we need to remove references
-     *   from method signatures to these types, because such classes can 
-     *   not exist in the classpath: the type checker will be very confused.
-     * </p>
-     */
-    def javaName(sym: Symbol): String = {
-      val suffix = moduleSuffix(sym)
-
-      if (sym == definitions.NothingClass)
-        return javaName(definitions.RuntimeNothingClass)
-      else if (sym == definitions.NullClass)
-        return javaName(definitions.RuntimeNullClass)
-
-      if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass) {
-        innerClasses = innerClasses + sym;
-      }
-
-      (if (sym.isClass || (sym.isModule && !sym.isMethod))
-        sym.fullNameString('/')
-      else
-        sym.simpleName.toString.trim()) + suffix
-    }
-
-    def javaNames(syms: List[Symbol]): Array[String] = {
-      val res = new Array[String](syms.length)
-      var i = 0
-      syms foreach (s => { res(i) = javaName(s); i += 1 })
-      res
-    }
-
-    /**
      * Return the Java modifiers for the given symbol.
      * Java modifiers for classes:
      *  - public, abstract, final, strictfp (not used)
@@ -1849,5 +1896,49 @@ abstract class GenJVM extends SubComponent {
     }
 
     def assert(cond: Boolean) { assert(cond, "Assertion failed.") }
+  }
+
+  /**
+   * <p>
+   *   Return the a name of this symbol that can be used on the Java
+   *   platform. It removes spaces from names.
+   * </p>
+   * <p>
+   *   Special handling: scala.Nothing and <code>scala.Null</code> are
+   *   <em>erased</em> to <code>scala.runtime.Nothing$</code> and
+   *   </code>scala.runtime.Null$</code>. This is needed because they are
+   *   not real classes, and they mean 'abrupt termination upon evaluation
+   *   of that expression' or <code>null</code> respectively. This handling is
+   *   done already in <a href="../icode/GenIcode.html" target="contentFrame">
+   *   <code>GenICode</code></a>, but here we need to remove references
+   *   from method signatures to these types, because such classes can
+   *   not exist in the classpath: the type checker will be very confused.
+   * </p>
+   */
+  def javaName(sym: Symbol): String = {
+    val suffix = moduleSuffix(sym)
+
+    if (sym == definitions.NothingClass)
+      return javaName(definitions.RuntimeNothingClass)
+    else if (sym == definitions.NullClass)
+      return javaName(definitions.RuntimeNullClass)
+    else if (sym == definitions.AnyRefClass)
+      return javaName(definitions.ObjectClass)
+
+    if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass) {
+      codeGenerator.innerClasses = codeGenerator.innerClasses + sym;
+    }
+
+    (if (sym.isClass || (sym.isModule && !sym.isMethod))
+      sym.fullNameString('/')
+    else
+      sym.simpleName.toString.trim()) + suffix
+  }
+
+  def javaNames(syms: List[Symbol]): Array[String] = {
+    val res = new Array[String](syms.length)
+    var i = 0
+    syms foreach (s => { res(i) = javaName(s); i += 1 })
+    res
   }
 }

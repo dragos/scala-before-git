@@ -468,6 +468,7 @@ trait TypeKinds { self: ICodes =>
     //  REFERENCE(definitions.ObjectClass)
 
     case _ =>
+      println(t)
       abort("Unknown type: " + t + ", " + t.normalize + "[" + t.getClass + ", " + t.normalize.getClass + "]" + 
 	    " TypeRef? " + t.isInstanceOf[TypeRef] + ", " + t.normalize.isInstanceOf[TypeRef]) 
   }

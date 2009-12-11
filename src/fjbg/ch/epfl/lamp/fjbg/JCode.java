@@ -35,6 +35,8 @@ public class JCode {
     protected int maxStackSize = UNKNOWN_STACK_SIZE;
     protected int[] stackProduction = null;
     protected int[] stackSizes;
+    protected JStackMapTableAttribute stackMapTable = null;
+
 
     protected JCode(FJBGContext context, JClass clazz, JMethod owner) {
         this.context = context;
@@ -1068,6 +1070,14 @@ public class JCode {
 
     public List/*<JExceptionHandler>*/ getExceptionHandlers() {
         return exceptionHandlers;
+    }
+
+    public JStackMapTableAttribute getStackMapTable() {
+        if (stackMapTable == null) {
+            stackMapTable = new JStackMapTableAttribute(context, owner);
+            addAttribute(stackMapTable);
+        }
+        return stackMapTable;
     }
 
     // Line numbers
