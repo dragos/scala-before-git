@@ -961,12 +961,16 @@ abstract class GenJVM extends SubComponent {
           var idx = 0;
           // fill in the gaps with ITEM_Top
           for (l <- locals.keysIterator.toSeq.sortWith(_.index < _.index)) {
+            val size = l.kind match {
+              case DOUBLE | LONG => 2
+              case _ => 1
+            }
             while (idx < l.index) {
               sortedLocals += ITEM_Top
               idx += 1
             }
             sortedLocals += javaVerificationType(locals(l))
-            idx += 1
+            idx += size
           }
           sortedLocals
         }
@@ -980,7 +984,7 @@ abstract class GenJVM extends SubComponent {
           case tp @ ReferenceType(cls) => new JObjectVerificationTypeInfo(jclass.getConstantPool.addClass(tp.getSignature))
           case tp @ ArrayOf(t) => new JObjectVerificationTypeInfo(jclass.getConstantPool.addClass(tp.getDescriptor))
           case UninitializedThis => ITEM_UninitializedThis
-          case Uninitialized((bb, idx)) => new JUninitializedTypeInfo(labels(bb).getAnchor + idx)
+          case Uninitialized((bb, idx)) => new JUninitializedTypeInfo(bb(idx).asInstanceOf[NEW].pc)
           case NullType => ITEM_Null
         }
 
@@ -1238,8 +1242,9 @@ abstract class GenJVM extends SubComponent {
             val mtype = new JMethodType(javaType(kind), Array(JObjectType.JAVA_LANG_OBJECT))
             jcode.emitINVOKESTATIC(BoxesRunTime, "unboxTo" + kind.toType.typeSymbol.cleanNameString, mtype)
 
-          case NEW(REFERENCE(cls)) =>
+          case n @ NEW(REFERENCE(cls)) =>
             val className = javaName(cls)
+            n.pc = jcode.getPC
             jcode.emitNEW(className)
 
           case CREATE_ARRAY(elem, 1) => elem match {
@@ -1643,7 +1648,10 @@ abstract class GenJVM extends SubComponent {
 
       if (this.method.exh != Nil)
         genExceptionHandlers;
-      if (settings.target.value == "jvm-1.6") addStackMapTable(jmethod)
+      // the array class violates the assumption that there exist no reference types to
+      // scala.Array (which stands for Java 'naked' arrays.
+      if (this.clasz.symbol != definitions.ArrayClass
+          && settings.target.value == "jvm-1.6") addStackMapTable(jmethod)
     }
 
 

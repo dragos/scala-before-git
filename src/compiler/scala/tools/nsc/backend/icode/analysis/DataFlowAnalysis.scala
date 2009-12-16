@@ -71,10 +71,10 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
           if (!worklist.contains(p))
             worklist += p;
             //assert(in.isDefinedAt(p), "Invalid successor for: " + point + " successor " + p + " does not exist")
-//          if (!p.exceptionHandlerStart) {
+//          if (p.exceptionHandlerStart) {
 //            println("at " + p + " " + p.exceptionHandlerStart + " lubbing " + p.predecessors + " outs: " + p.predecessors.map(out.apply).mkString("\n", "\n", ""))
 //          }
-            in(p) = lattice.lub(p.predecessors map out.apply, p.exceptionHandlerStart)
+          in(p) = lattice.lub(p.predecessors map out.apply, p.exceptionHandlerStart, in(p))
         }
       }
     }
@@ -95,7 +95,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
       if (stat) iterations += 1
       val point = worklist.iterator.next; worklist -= point
 
-      out(point) = lattice.lub(point.successors map in.apply, false) // TODO check for exception handlers
+      out(point) = lattice.lub(point.successors map in.apply, false, out(point)) // TODO check for exception handlers
       val input = f(point, out(point))
 
       if ((lattice.bottom == in(point)) || input != in(point)) {

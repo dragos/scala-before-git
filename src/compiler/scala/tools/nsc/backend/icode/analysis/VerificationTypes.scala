@@ -31,6 +31,10 @@ abstract class VerificationTypes {
 
     abstract class VerificationType {
       def getSignature: String = this match {
+        case Bool => "Z"
+        case Byte => "B"
+        case Char => "C"
+        case Short => "S"
         case Int => "I"
         case Long => "J"
         case Float => "F"
@@ -55,9 +59,16 @@ abstract class VerificationTypes {
     case object Double extends VerificationType
     case class  Uninitialized(pos: (BasicBlock, Int)) extends VerificationType
     case object UninitializedThis extends VerificationType
-    case class  ReferenceType(cls: Symbol) extends VerificationType
+    case class  ReferenceType(cls: Symbol) extends VerificationType {
+      assert(cls != definitions.ArrayClass)
+    }
     case class  ArrayOf(v: VerificationType) extends VerificationType
     case object NullType extends VerificationType
+    // the following types are used only as component type of an array type
+    case object Bool extends VerificationType
+    case object Byte extends VerificationType
+    case object Char extends VerificationType
+    case object Short extends VerificationType
 
     val AnyRefType = ReferenceType(definitions.AnyRefClass)
     val StringBufferType = ReferenceType(definitions.getClass("scala.collection.mutable.StringBuilder"))
@@ -82,18 +93,29 @@ abstract class VerificationTypes {
     def bottom = Bottom
 
     /** The least upper bound of two types.  */
-    def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
+    def lub2(exceptional: Boolean, old: Elem)(a: Elem, b: Elem): Elem =
       if (a == b) a else (a, b) match {
         case (Bottom, _) => b
         case (_, Bottom) => a
         case (Top, _) | (_, Top) => Top
         case (ReferenceType(cls1), ReferenceType(cls2)) =>
-          ReferenceType(global.lub(cls1.tpe :: cls2.tpe :: Nil).typeSymbol)
+          def bestLub: Symbol = {
+            val lub0: Type = atPhase(global.currentRun.refchecksPhase)(global.lub(cls1.tpe :: cls2.tpe :: Nil))
+            lub0 match {
+              case RefinedType(parents, decls) =>
+                parents.find(!_.typeSymbol.isTrait).getOrElse(lub0).typeSymbol
+              case _ => lub0.typeSymbol
+            }
+          }
+          println("lubbing " + cls1  + " and " + cls2 + " => " +
+                  atPhase(global.currentRun.refchecksPhase)(global.lub(cls1.tpe :: cls2.tpe :: Nil))
+                  + " got back " + bestLub)
+          ReferenceType(bestLub)
         case (Uninitialized(p1), Uninitialized(p2)) if p1 == p2 => a
         case (NullType, ReferenceType(_)) => b
         case (ReferenceType(_), NullType) => a
         case (ArrayOf(e1), ArrayOf(e2)) =>
-          lub2(exceptional)(e1, e2) match {
+          lub2(exceptional, old)(e1, e2) match {
             case Top => AnyRefType
             case e => ArrayOf(e)
           }
@@ -114,16 +136,30 @@ abstract class VerificationTypes {
       case FLOAT => Float
       case DOUBLE => Double
       case REFERENCE(cls) => ReferenceType(cls)
-      case ARRAY(e) => ArrayOf(verificationType(e))
+      case ARRAY(e) =>
+        e match {
+          case BOOL => ArrayOf(Bool)
+          case BYTE => ArrayOf(Byte)
+          case CHAR => ArrayOf(Char)
+          case SHORT => ArrayOf(Short)
+          case _ => ArrayOf(verificationType(e))
+        }
       case ConcatClass => StringBufferType
       case UNIT => Predef.error("found unit")
+      case BOXED(kind) => (kind: @unchecked) match {
+        case BOOL => ReferenceType(definitions.BoxedBooleanClass)
+        case BYTE => ReferenceType(definitions.BoxedByteClass)
+        case SHORT => ReferenceType(definitions.BoxedShortClass)
+        case CHAR => ReferenceType(definitions.BoxedCharacterClass)
+        case INT => ReferenceType(definitions.BoxedIntClass)
+        case LONG => ReferenceType(definitions.BoxedLongClass)
+        case FLOAT => ReferenceType(definitions.BoxedFloatClass)
+        case DOUBLE => ReferenceType(definitions.BoxedDoubleClass)
+      }
     }
 
-    def verificationType(tpe: Type): VerificationType = tpe match {
-      case TypeRef(_, sym, args) =>
-        primitiveTypeMap.getOrElse(sym, ReferenceType(sym))
-
-    }
+    def verificationType(tpe: Type): VerificationType =
+      verificationType(toTypeKind(tpe))
   }
 
   /** The lattice of type stacks. It is a straight forward extension of
@@ -136,63 +172,81 @@ abstract class VerificationTypes {
     override val top: Elem    = new TypeStack[VerificationType]
     override val bottom: Elem = new TypeStack[VerificationType]
 
-    val exceptionHandlerStack: Elem = {
+    def exceptionHandlerStack(target: Symbol) = {
       val s = new TypeStack[VerificationType]
-      s.push(ReferenceType(definitions.ThrowableClass))
+      s.push(ReferenceType(if (target == NoSymbol) definitions.ThrowableClass else target))
     }
 
-    def lub2(exceptional: Boolean)(s1: Elem, s2: Elem): TypeStack[VerificationType] = {
+    def lub2(exceptional: Boolean, old: Elem)(s1: Elem, s2: Elem): TypeStack[VerificationType] = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
-      else if (exceptional) exceptionHandlerStack
-      else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack")
+      else if (exceptional) {
+        println("exceptional handler, resuing old value: " + old)
+        old
+      }
       else {
-        val tps = (s1.types, s2.types).zipped map verificationTypeLattice.lub2(exceptional)
+        val tps = (s1.types, s2.types, old.types).zipped map { (t1, t2, old) =>
+          verificationTypeLattice.lub2(exceptional, old)(t1, t2)
+        }
         (new TypeStack[VerificationType]).pushAll(tps.reverse)
       }
     }
   }
 
+  object varBindingLattice extends CompleteLattice {
+    import verificationTypeLattice.{VerificationType, ReferenceType}
+    type VarBinding = mutable.LinkedHashMap[icodes.Local, verificationTypeLattice.Elem]
+    type Elem = VarBinding
 
-  type VarBinding = mutable.LinkedHashMap[icodes.Local, verificationTypeLattice.Elem]
-  
+    val top = new VarBinding
+    val bottom = new VarBinding
+
+    def lub2(exceptional: Boolean, old: Elem)(a: VarBinding, b: VarBinding): VarBinding = {
+      if (a eq bottom) b
+      else if (b eq bottom) a
+      else {
+        val resultingLocals = new VarBinding
+
+        for (binding1 <- a.iterator) {
+          b.get(binding1._1) match {
+            case Some(tp2) =>
+              resultingLocals += ((binding1._1, verificationTypeLattice.lub2(exceptional, tp2)(binding1._2, tp2)))
+            case None =>
+              //resultingLocals += ((binding1._1, verificationTypeLattice.bottom))
+          }
+        }
+        resultingLocals
+      }
+    }
+  }
+
+
+
   /** The type flow lattice contains a binding from local variable
    *  names to types and a type stack.
    */
   object typeFlowLattice extends CompleteLattice {
     import icodes._
+    import varBindingLattice._
+
     type Elem = IState[VarBinding, typeStackLattice.Elem]
 
-    override val top    = new Elem(new VarBinding, typeStackLattice.top)
-    override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
+    override val top    = new Elem(varBindingLattice.top, typeStackLattice.top)
+    override val bottom = new Elem(varBindingLattice.bottom, typeStackLattice.bottom)
 
     // a dummy local variable representing bindings of 'this'
     val thisLocal = new icodes.Local(NoSymbol, null, false)
     thisLocal.index = 0
 
-    def lub2(exceptional: Boolean)(a: Elem, b: Elem) = {
+    def lub2(exceptional: Boolean, old: Elem)(a: Elem, b: Elem) = {
       val IState(env1, s1) = a
       val IState(env2, s2) = b
 
-      val resultingLocals = new VarBinding
-
-      for (binding1 <- env1.iterator) {
-        env2.get(binding1._1) match {
-          case Some(tp2) =>
-            resultingLocals += ((binding1._1, verificationTypeLattice.lub2(exceptional)(binding1._2, tp2)))
-          case None =>
-            //resultingLocals += ((binding1._1, verificationTypeLattice.bottom))
-        }
-      }
-
-//      for (binding2 <- env2.iterator if !resultingLocals.isDefinedAt(binding2._1)) {
-//        resultingLocals += ((binding2._1, verificationTypeLattice.bottom))
-//      }
-
-      if (exceptional) IState(resultingLocals, typeStackLattice.exceptionHandlerStack)
+      lazy val resultingBindings = varBindingLattice.lub2(exceptional, old.vars)(env1, env2)
+      if (exceptional) IState(resultingBindings, old.stack)
       else if (a eq bottom) b
       else if (b eq bottom) a
-      else IState(resultingLocals, typeStackLattice.lub2(exceptional)(a.stack, b.stack))
+      else IState(resultingBindings, typeStackLattice.lub2(exceptional, old.stack)(a.stack, b.stack))
     }
   }
 
@@ -222,7 +276,7 @@ abstract class VerificationTypes {
         }
 
         // start block has var bindings for each of its parameters
-        val entryBindings = new VarBinding
+        val entryBindings = new varBindingLattice.VarBinding
         m.params.foreach(p => entryBindings += ((p, verificationType(p.kind))))
         if (!m.isStatic)
           entryBindings += ((typeFlowLattice.thisLocal,
@@ -231,7 +285,7 @@ abstract class VerificationTypes {
         in(m.code.startBlock) = lattice.IState(entryBindings, typeStackLattice.bottom)
 
         m.exh foreach { e =>
-          in(e.startBlock) = lattice.IState(in(e.startBlock).vars, typeStackLattice.exceptionHandlerStack)
+          in(e.startBlock) = lattice.IState(varBindingLattice.bottom, typeStackLattice.exceptionHandlerStack(e.cls))
         }
       }
     }
@@ -271,10 +325,16 @@ abstract class VerificationTypes {
         val out = lattice.IState(in.vars.clone, new TypeStack(in.stack))
         val bindings = out.vars
         val stack = out.stack
+        def replaceUninitialized(instance: VerificationType, result: VerificationType) {
+          // replace its occurences by the proper reference type
+          stack.map(t => if (t == instance) result else t)
+          bindings.foreach { case (k, v) => bindings.update(k, if (v == instance) result else v) }
+        }
+
 
         if (settings.debug.value) {
           Console.println("[before] locals: " + bindings)
-          Console.println("[before] Stack: " + stack);
+          Console.println("[before] Stack: " + stack);      
           Console.println(i);
         }
         i match {
@@ -293,7 +353,7 @@ abstract class VerificationTypes {
             stack.push(verificationType(kind))
 
           case LOAD_LOCAL(local) =>
-            bindings.get(local) match {
+            bindings.get(local) match {     
               case Some(t) => stack.push(t)
               case None => stack.push(verificationTypeLattice.bottom)
             }
@@ -384,10 +444,7 @@ abstract class VerificationTypes {
                 if (method.info.resultType.typeSymbol != definitions.UnitClass) {
                   val result = verificationType(toTypeKind(method.info.resultType))
                   if (method.isClassConstructor) {
-                    println("** checking to update uninit " + uninit)
-                    // replace its occurences by the proper reference type
-                    stack.map(t => if (t == uninit) result else t)
-                    bindings.foreach { case (k, v) => bindings.update(k, if (v == uninit) result else v) }
+                    replaceUninitialized(uninit, result)
                   } else
                     stack.push(result)
                 }
@@ -398,8 +455,12 @@ abstract class VerificationTypes {
               }
 
             case SuperCall(mix) =>
-              stack.pop(1 + method.info.paramTypes.length)
-              if (method.info.resultType.typeSymbol != definitions.UnitClass)
+              stack.pop(method.info.paramTypes.length)
+              val receiver = stack.pop
+              if (method.isClassConstructor) {
+                assert(receiver == UninitializedThis)
+                replaceUninitialized(receiver, ReferenceType(this.method.symbol.owner)) // current class
+              } else if (method.info.resultType.typeSymbol != definitions.UnitClass)
                 stack.push(toTypeKind(method.info.resultType))
           }
 
@@ -416,7 +477,7 @@ abstract class VerificationTypes {
 
           case CREATE_ARRAY(elem, dims) =>
             stack.pop(dims)
-            stack.push(ArrayOf(verificationType(elem)))
+            stack.push(verificationType(ARRAY(elem)))
 
           case IS_INSTANCE(tpe) =>
             stack.pop

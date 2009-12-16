@@ -19,10 +19,19 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="quick">
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/build/quick/classes/compiler" />
+          <root url="file://$MODULE_DIR$/build/quick/classes/library" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="library" name="Project ant library" level="project" />
     <orderEntry type="library" name="Project Scala SDK" level="project" />
     <orderEntry type="library" name="ant" level="project" />
-    <orderEntry type="library" name="locker" level="project" />
   </component>
 </module>
 

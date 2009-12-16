@@ -279,7 +279,7 @@ abstract class GenICode extends SubComponent  {
                  "Too many arguments for array get operation: " + tree);
         ctx1 = genLoad(args.head, ctx1, INT)
         generatedType = elem
-        ctx1.bb.emit(LOAD_ARRAY_ITEM(elementType), tree.pos)
+        ctx1.bb.emit(LOAD_ARRAY_ITEM(elem), tree.pos)
       }
       else if (scalaPrimitives.isArraySet(code)) {
         if (settings.debug.value)
@@ -291,11 +291,11 @@ abstract class GenICode extends SubComponent  {
         // we pretend we generate whatever type is expected from us.
         //generatedType = UNIT
 
-        ctx1.bb.emit(STORE_ARRAY_ITEM(elementType), tree.pos)
+        ctx1.bb.emit(STORE_ARRAY_ITEM(elem), tree.pos)
       }
       else {
         generatedType = INT
-        ctx1.bb.emit(CALL_PRIMITIVE(ArrayLength(elementType)), tree.pos)
+        ctx1.bb.emit(CALL_PRIMITIVE(ArrayLength(elem)), tree.pos)
       }
 
       (ctx1, generatedType)

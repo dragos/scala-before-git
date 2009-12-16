@@ -389,6 +389,11 @@ trait Opcodes { self: ICodes =>
       
       /** The corresponding constructor call. */
       var init: CALL_METHOD = _
+
+      /** PC where this NEW instruction was emitted. Needed by the jvm-1.6 target for emitting
+       *  StackMapTable attributes
+       */
+      var pc: Int = _
     }
 
 

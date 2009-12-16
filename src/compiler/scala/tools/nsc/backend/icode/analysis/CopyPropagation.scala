@@ -177,7 +177,7 @@ abstract class CopyPropagation {
 
     val exceptionHandlerStack = Unknown :: Nil
 
-    def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem = {
+    def lub2(exceptional: Boolean, old: Elem)(a: Elem, b: Elem): Elem = {
       if (a eq bottom)      b
       else if (b eq bottom) a
       else if (a == b) a

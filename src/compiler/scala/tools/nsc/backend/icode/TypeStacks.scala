@@ -20,6 +20,7 @@ trait TypeStacks { self: ICodes =>
 
   class TypeStack[T] {
     var types: List[T] = Nil
+    private var exceptionHandler = false
 
     def this(stack: List[T]) = {
       this()
@@ -27,6 +28,11 @@ trait TypeStacks { self: ICodes =>
     }
 
     def this(that: TypeStack[T]) = this(that.types)
+
+    def setExceptionHandler(b: Boolean): this.type = {
+      exceptionHandler = b
+      this
+    }
 
     def length: Int = types.length
 

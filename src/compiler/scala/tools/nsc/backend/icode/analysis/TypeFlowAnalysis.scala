@@ -29,7 +29,7 @@ abstract class TypeFlowAnalysis {
     def top    = Object
     def bottom = All
 
-    def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
+    def lub2(exceptional: Boolean, old: Elem)(a: Elem, b: Elem) =
       if (a eq bottom) b
       else if (b eq bottom) a
       else icodes.lub(a, b)
@@ -44,9 +44,9 @@ abstract class TypeFlowAnalysis {
 
     override val top    = new TypeStack[TypeKind]
     override val bottom = new TypeStack[TypeKind]
-    val exceptionHandlerStack: TypeStack[TypeKind] = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
+    val exceptionHandlerStack: TypeStack[TypeKind] = new TypeStack(List(REFERENCE(definitions.ThrowableClass)))
 
-    def lub2(exceptional: Boolean)(s1: TypeStack[TypeKind], s2: TypeStack[TypeKind]) = {
+    def lub2(exceptional: Boolean, old: Elem)(s1: TypeStack[TypeKind], s2: TypeStack[TypeKind]) = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
       else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack") 
@@ -83,7 +83,7 @@ abstract class TypeFlowAnalysis {
 
 //    var lubs = 0
 
-    def lub2(exceptional: Boolean)(a: Elem, b: Elem) = {
+    def lub2(exceptional: Boolean, old: Elem)(a: Elem, b: Elem) = {
       val IState(env1, s1) = a
       val IState(env2, s2) = b
 
@@ -93,17 +93,17 @@ abstract class TypeFlowAnalysis {
 
       for (binding1 <- env1.iterator) {
         val tp2 = env2(binding1._1)
-        resultingLocals += ((binding1._1, typeLattice.lub2(exceptional)(binding1._2, tp2)))
+        resultingLocals += ((binding1._1, typeLattice.lub2(exceptional, tp2)(binding1._2, tp2)))
       }
 
       for (binding2 <- env2.iterator if resultingLocals(binding2._1) eq typeLattice.bottom) {
         val tp1 = env1(binding2._1)
-        resultingLocals += ((binding2._1, typeLattice.lub2(exceptional)(binding2._2, tp1)))
+        resultingLocals += ((binding2._1, typeLattice.lub2(exceptional, tp1)(binding2._2, tp1)))
       }
 
       IState(resultingLocals,
         if (exceptional) typeStackLattice.exceptionHandlerStack
-        else typeStackLattice.lub2(exceptional)(a.stack, b.stack))
+        else typeStackLattice.lub2(exceptional, old.stack)(a.stack, b.stack))
     }
   }
 

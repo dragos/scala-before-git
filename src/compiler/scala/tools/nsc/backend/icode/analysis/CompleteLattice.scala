@@ -28,7 +28,7 @@ trait CompleteLattice {
   }
 
   /** Return the least upper bound of <code>a</code> and <code>b</code> */
-  def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem
+  def lub2(exceptional: Boolean, old: Elem)(a: Elem, b: Elem): Elem
 
   /** Return the top element. */
   def top: Elem
@@ -36,9 +36,15 @@ trait CompleteLattice {
   /** Return the bottom element. */
   def bottom: Elem
 
-  /** Compute the least upper bound of a list of elements. */
-  def lub(xs: List[Elem], exceptional: Boolean): Elem = try {
-    if (xs == Nil) bottom else xs reduceLeft lub2(exceptional)
+  /** Compute the least upper bound of a list of elements.
+   *
+   *  @param xs The values for which the least upper bound is computed
+   *  @exceptional true if the lub is computed at entry of an exception handler
+   *  @old the old value at entry. Used for exception handlers, that might choose
+   *       to keep the old value (for instance, the entry stack is fixed) 
+   */
+  def lub(xs: List[Elem], exceptional: Boolean, old: Elem): Elem = try {
+    if (xs == Nil) bottom else xs reduceLeft lub2(exceptional, old)
   } catch {
       case e: LubError =>
         Console.println("Lub on blocks: " + xs)
