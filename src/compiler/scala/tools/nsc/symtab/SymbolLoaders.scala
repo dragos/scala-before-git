@@ -239,7 +239,7 @@ abstract class SymbolLoaders {
     private object classfileParser extends ClassfileParser {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
-    
+
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {

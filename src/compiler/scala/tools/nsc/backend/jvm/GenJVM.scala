@@ -949,6 +949,7 @@ abstract class GenJVM extends SubComponent {
         import JVerificationTypeInfo._
         import verificationTypes.verificationTypeLattice._
         import verificationTypes.typeFlowLattice
+        import verificationTypes.varBindingLattice.VarBinding
 
         val a = new global.verificationTypes.InferTypes
         val emptyVerificationStack = new Array[JVerificationTypeInfo](0)
@@ -956,7 +957,7 @@ abstract class GenJVM extends SubComponent {
         /** Return an array buffer containing the corresponing classfile verification type for each local variable
          *  found in the given binding.
          */
-        def javaVerificationTypes(locals: global.verificationTypes.VarBinding): ArrayBuffer[JVerificationTypeInfo] = {
+        def javaVerificationTypes(locals: VarBinding): ArrayBuffer[JVerificationTypeInfo] = {
           val sortedLocals = new ArrayBuffer[JVerificationTypeInfo]
           var idx = 0;
           // fill in the gaps with ITEM_Top
@@ -965,7 +966,7 @@ abstract class GenJVM extends SubComponent {
               case DOUBLE | LONG => 2
               case _ => 1
             }
-            while (idx < l.index) {
+            while (idx < l.index) {       
               sortedLocals += ITEM_Top
               idx += 1
             }
@@ -989,8 +990,8 @@ abstract class GenJVM extends SubComponent {
         }
 
         def appendOrChop(offset: Int,
-                         prev: verificationTypes.VarBinding,
-                         current: verificationTypes.VarBinding): Option[JStackMapFrame] = {
+                         prev: VarBinding,
+                         current: VarBinding): Option[JStackMapFrame] = {
           val prevLocals = javaVerificationTypes(prev)
           val currentLocals = javaVerificationTypes(current)
 

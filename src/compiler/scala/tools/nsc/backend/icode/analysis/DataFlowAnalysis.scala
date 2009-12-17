@@ -74,6 +74,8 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
 //          if (p.exceptionHandlerStart) {
 //            println("at " + p + " " + p.exceptionHandlerStart + " lubbing " + p.predecessors + " outs: " + p.predecessors.map(out.apply).mkString("\n", "\n", ""))
 //          }
+//          println(" ** lub at: " + p + "\n\tusing: " + p.predecessors
+//              + "\n\t" + (p.predecessors map out.apply).mkString("", "\n", "") )
           in(p) = lattice.lub(p.predecessors map out.apply, p.exceptionHandlerStart, in(p))
         }
       }

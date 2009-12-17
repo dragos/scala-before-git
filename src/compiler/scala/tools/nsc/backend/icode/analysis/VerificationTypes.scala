@@ -61,6 +61,7 @@ abstract class VerificationTypes {
     case object UninitializedThis extends VerificationType
     case class  ReferenceType(cls: Symbol) extends VerificationType {
       assert(cls != definitions.ArrayClass)
+      assert(!cls.isRefinementClass)
     }
     case class  ArrayOf(v: VerificationType) extends VerificationType
     case object NullType extends VerificationType
@@ -101,12 +102,15 @@ abstract class VerificationTypes {
         case (ReferenceType(cls1), ReferenceType(cls2)) =>
           def bestLub: Symbol = {
             val lub0: Type = atPhase(global.currentRun.refchecksPhase)(global.lub(cls1.tpe :: cls2.tpe :: Nil))
-            lub0 match {
+            def firstNonTraitParent(tpe: Type): Symbol = tpe match {
               case RefinedType(parents, decls) =>
-                parents.find(!_.typeSymbol.isTrait).getOrElse(lub0).typeSymbol
-              case _ => lub0.typeSymbol
+                parents.find(!_.typeSymbol.isTrait).getOrElse(parents.head).typeSymbol
+              case NotNullType(underlying) => firstNonTraitParent(underlying)
+              case _ => tpe.typeSymbol
             }
+            firstNonTraitParent(lub0)
           }
+
           println("lubbing " + cls1  + " and " + cls2 + " => " +
                   atPhase(global.currentRun.refchecksPhase)(global.lub(cls1.tpe :: cls2.tpe :: Nil))
                   + " got back " + bestLub)
@@ -212,7 +216,7 @@ abstract class VerificationTypes {
             case Some(tp2) =>
               resultingLocals += ((binding1._1, verificationTypeLattice.lub2(exceptional, tp2)(binding1._2, tp2)))
             case None =>
-              //resultingLocals += ((binding1._1, verificationTypeLattice.bottom))
+//              resultingLocals += ((binding1._1, verificationTypeLattice.bottom))
           }
         }
         resultingLocals
@@ -269,7 +273,7 @@ abstract class VerificationTypes {
       //typeFlowLattice.lubs = 0
       init {
         worklist += m.code.startBlock
-        worklist ++= (m.exh map (_.startBlock))
+//        worklist ++= (m.exh map (_.startBlock))
         m.code.blocks.foreach { b =>
           in(b)  = typeFlowLattice.bottom
           out(b) = typeFlowLattice.bottom
