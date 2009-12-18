@@ -100,12 +100,15 @@ abstract class VerificationTypes {
         case (_, Bottom) => a
         case (Top, _) | (_, Top) => Top
         case (ReferenceType(cls1), ReferenceType(cls2)) =>
-          def bestLub: Symbol = {
-            val lub0: Type = atPhase(global.currentRun.refchecksPhase)(global.lub(cls1.tpe :: cls2.tpe :: Nil))
+          def bestLub: Symbol = atPhase(global.currentRun.refchecksPhase) {
+            val lub0: Type = (global.lub(cls1.tpe :: cls2.tpe :: Nil))
+
             def firstNonTraitParent(tpe: Type): Symbol = tpe match {
               case RefinedType(parents, decls) =>
-                parents.find(!_.typeSymbol.isTrait).getOrElse(parents.head).typeSymbol
+                firstNonTraitParent(parents.find(!_.typeSymbol.isTrait).getOrElse(parents.head))
               case NotNullType(underlying) => firstNonTraitParent(underlying)
+              case tpe if tpe.typeSymbol.isTrait =>
+                tpe.parents.find(!_.typeSymbol.isTrait).get.typeSymbol
               case _ => tpe.typeSymbol
             }
             firstNonTraitParent(lub0)
@@ -129,9 +132,7 @@ abstract class VerificationTypes {
         case (NullType, ArrayOf(_)) => b
         case (ReferenceType(_), NullType) => a
         case (NullType, ReferenceType(_)) => b
-        case _ =>
-          println("emitting Top lub of " + a + ", " + b)
-          Top
+        case _ => Top
       }
 
     implicit def verificationType(tp: TypeKind): VerificationType = tp match {
