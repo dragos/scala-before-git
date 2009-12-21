@@ -100,7 +100,7 @@ abstract class VerificationTypes {
         case (_, Bottom) => a
         case (Top, _) | (_, Top) => Top
         case (ReferenceType(cls1), ReferenceType(cls2)) =>
-          def bestLub: Symbol = atPhase(global.currentRun.refchecksPhase) {
+          def bestLub: Symbol = {
             val lub0: Type = (global.lub(cls1.tpe :: cls2.tpe :: Nil))
 
             def firstNonTraitParent(tpe: Type): Symbol = tpe match {
@@ -115,7 +115,7 @@ abstract class VerificationTypes {
           }
 
           println("lubbing " + cls1  + " and " + cls2 + " => " +
-                  atPhase(global.currentRun.refchecksPhase)(global.lub(cls1.tpe :: cls2.tpe :: Nil))
+                  global.lub(cls1.tpe :: cls2.tpe :: Nil)
                   + " got back " + bestLub)
           ReferenceType(bestLub)
         case (Uninitialized(p1), Uninitialized(p2)) if p1 == p2 => a
