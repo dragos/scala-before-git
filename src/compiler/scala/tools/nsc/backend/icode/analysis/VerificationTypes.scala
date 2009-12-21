@@ -107,8 +107,8 @@ abstract class VerificationTypes {
               case RefinedType(parents, decls) =>
                 firstNonTraitParent(parents.find(!_.typeSymbol.isTrait).getOrElse(parents.head))
               case NotNullType(underlying) => firstNonTraitParent(underlying)
-              case tpe if tpe.typeSymbol.isTrait =>
-                tpe.parents.find(!_.typeSymbol.isTrait).get.typeSymbol
+//              case tpe if tpe.typeSymbol.isTrait =>
+//                tpe.parents.find(!_.typeSymbol.isTrait).get.typeSymbol
               case _ => tpe.typeSymbol
             }
             firstNonTraitParent(lub0)
@@ -359,7 +359,7 @@ abstract class VerificationTypes {
 
           case LOAD_LOCAL(local) =>
             bindings.get(local) match {     
-              case Some(t) => stack.push(t)
+              case Some(t) => stack.push(local.kind)
               case None => stack.push(verificationTypeLattice.bottom)
             }
 
@@ -375,7 +375,7 @@ abstract class VerificationTypes {
 
           case STORE_LOCAL(local) =>
             val t = stack.pop
-            bindings += (local -> t)
+            bindings += (local -> local.kind)
 
           case STORE_THIS(_) =>
             stack.pop
