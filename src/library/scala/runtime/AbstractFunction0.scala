@@ -8,9 +8,9 @@
 
 package scala.runtime
 
-abstract class AbstractFunction0[+R] extends Function0[R] { }
-abstract class AbstractFunction1[-T1, +R] extends Function1[T1, R] { }
-abstract class AbstractFunction2[-T1, -T2, +R] extends Function2[T1, T2, R] { }
+abstract class AbstractFunction0[@specialized +R] extends Function0[R] { }
+abstract class AbstractFunction1[@specialized -T1, @specialized +R] extends Function1[T1, R] { }
+abstract class AbstractFunction2[@specialized -T1, @specialized -T2, @specialized +R] extends Function2[T1, T2, R] { }
 abstract class AbstractFunction3[-T1, -T2, -T3, +R] extends Function3[T1, T2, T3, R] { }
 abstract class AbstractFunction4[-T1, -T2, -T3, -T4, +R] extends Function4[T1, T2, T3, T4, R] { }
 abstract class AbstractFunction5[-T1, -T2, -T3, -T4, -T5, +R] extends Function5[T1, T2, T3, T4, T5, R] { }
