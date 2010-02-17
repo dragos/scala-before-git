@@ -17,7 +17,10 @@ package scala.math
 trait Fractional[T] extends Numeric[T] {
   def div(x: T, y: T): T
   
-  class FractionalOps(lhs: T) extends Ops(lhs) {
+  class FractionalOps(lhs1: T) extends NumericOps[T] {
+    val lhs = lhs1
+    val n = Fractional.this
+
     def /(rhs: T) = div(lhs, rhs)
   }
   override implicit def mkNumericOps(lhs: T): FractionalOps =
