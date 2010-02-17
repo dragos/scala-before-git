@@ -167,7 +167,23 @@ object Numeric {
   object DoubleAsIfIntegral extends DoubleAsIfIntegral with Ordering.DoubleOrdering
 }
 
-trait Numeric[T] extends Ordering[T] {
+trait NumericOps[@specialized("Int") T] {
+  val lhs: T
+  val n: Numeric[T]
+
+  def +(rhs: T) = n.plus(lhs, rhs)
+  def -(rhs: T) = n.minus(lhs, rhs)
+  def *(rhs: T) = n.times(lhs, rhs)
+  def unary_-() = n.negate(lhs)
+  def abs(): T = n.abs(lhs)
+  def signum(): Int = n.signum(lhs)
+  def toInt(): Int = n.toInt(lhs)
+  def toLong(): Long = n.toLong(lhs)
+  def toFloat(): Float = n.toFloat(lhs)
+  def toDouble(): Double = n.toDouble(lhs)
+}
+
+trait Numeric[@specialized("Int") T] extends Ordering[T] {
   def plus(x: T, y: T): T
   def minus(x: T, y: T): T
   def times(x: T, y: T): T
@@ -186,18 +202,10 @@ trait Numeric[T] extends Ordering[T] {
     if (lt(x, zero)) -1
     else if (gt(x, zero)) 1
     else 0
-  
-  class Ops(lhs: T) {
-    def +(rhs: T) = plus(lhs, rhs)
-    def -(rhs: T) = minus(lhs, rhs)
-    def *(rhs: T) = times(lhs, rhs)
-    def unary_-() = negate(lhs)
-    def abs(): T = Numeric.this.abs(lhs)
-    def signum(): Int = Numeric.this.signum(lhs)
-    def toInt(): Int = Numeric.this.toInt(lhs)
-    def toLong(): Long = Numeric.this.toLong(lhs)
-    def toFloat(): Float = Numeric.this.toFloat(lhs)
-    def toDouble(): Double = Numeric.this.toDouble(lhs)    
+
+  implicit def mkNumericOps(lhs1: T): NumericOps[T] = new NumericOps[T] {
+    val lhs = lhs1
+    val n = Numeric.this
   }
-  implicit def mkNumericOps(lhs: T): Ops = new Ops(lhs)
 }
+
