@@ -807,13 +807,14 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Select(qualifier, selector) =>
-          val sym = tree.symbol
+          var sym = tree.symbol
           generatedType = toTypeKind(sym.info)
 
           if (sym.isModule) {
             if (settings.debug.value)
               log("LOAD_MODULE from Select(qualifier, selector): " + sym);
             assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
+            sym = definitions.runtimeCompanion.getOrElse(sym, sym)
             ctx.bb.emit(LOAD_MODULE(sym), tree.pos);
             ctx
           } else if (sym.isStaticMember) {
