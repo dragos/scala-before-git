@@ -1737,6 +1737,8 @@ abstract class GenJVM extends SubComponent {
         return javaName(definitions.RuntimeNothingClass)
       else if (sym == definitions.NullClass)
         return javaName(definitions.RuntimeNullClass)
+      else if (definitions.runtimeCompanion.isDefinedAt(sym.companionModule))
+        return javaName(definitions.runtimeCompanion(sym.companionModule))
 
       if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass) {
         innerClasses = innerClasses + sym;
