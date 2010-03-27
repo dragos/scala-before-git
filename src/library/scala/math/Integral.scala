@@ -14,7 +14,7 @@ package scala.math
 /**
  * @since 2.8
  */
-trait Integral[@specialized("Int") T] extends Numeric[T] {
+trait Integral[@specialized(Int) T] extends Numeric[T] {
   def quot(x: T, y: T): T
   def rem(x: T, y: T): T
   
@@ -24,7 +24,7 @@ trait Integral[@specialized("Int") T] extends Numeric[T] {
   }
 }
 
-trait IntegralOps[@specialized("Int") T] extends NumericOps[T] {
+trait IntegralOps[@specialized(Int) T] extends NumericOps[T] {
   override val n: Integral[T]
   import n._
 

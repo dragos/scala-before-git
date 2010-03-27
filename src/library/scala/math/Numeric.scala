@@ -167,7 +167,7 @@ object Numeric {
   object DoubleAsIfIntegral extends DoubleAsIfIntegral with Ordering.DoubleOrdering
 }
 
-trait NumericOps[@specialized("Int") T] {
+trait NumericOps[@specialized(Int) T] {
   val lhs: T
   val n: Numeric[T]
 
@@ -183,7 +183,7 @@ trait NumericOps[@specialized("Int") T] {
   def toDouble(): Double = n.toDouble(lhs)
 }
 
-trait Numeric[@specialized("Int") T] extends Ordering[T] {
+trait Numeric[@specialized(Int) T] extends Ordering[T] {
   def plus(x: T, y: T): T
   def minus(x: T, y: T): T
   def times(x: T, y: T): T
