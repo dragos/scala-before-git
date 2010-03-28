@@ -582,7 +582,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     val boxedModule = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
-    val runtimeCompanion = new HashMap[Symbol, Symbol]
+    val primitiveCompanions = new HashSet[Symbol]
 
     def isUnbox(m: Symbol) = unboxMethod.valuesIterator contains m
     def isBox(m: Symbol) = boxMethod.valuesIterator contains m
@@ -609,7 +609,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(AnyRefClass.tpe, AnyValCompanionClass.tpe), new Scope, mclass))
       module.setInfo(mclass.tpe)
-      runtimeCompanion(module) = getModule("scala.runtime.Unit")
+      primitiveCompanions += module
     }
 
     private[symtab] def newValueClass(name: Name, tag: Char, weight: Int): Symbol = {
@@ -627,7 +627,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(AnyRefClass.tpe, AnyValCompanionClass.tpe), new Scope, mclass))
       module.setInfo(mclass.tpe)
-      runtimeCompanion(module) = getModule("scala.runtime." + name)
+      primitiveCompanions += module
 
       val box = newMethod(mclass, nme.box, List(clazz.typeConstructor), boxedClass(clazz).tpe)
       boxMethod(clazz) = box
