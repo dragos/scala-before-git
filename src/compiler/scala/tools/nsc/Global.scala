@@ -722,11 +722,28 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       reporter.reset
       for (source <- sources) addUnit(new CompilationUnit(source))
 
+      import com.yourkit.api._
+      val profiler = if (settings.Yprofile.value.nonEmpty) new Controller else null
+
       globalPhase = firstPhase
       while (globalPhase != terminal.newPhase(NoPhase) && !reporter.hasErrors) {
+        
         val startTime = currentTime
         phase = globalPhase
+        
+        if (settings.Yprofile.contains(globalPhase.name)) {
+          println("starting CPU profiling on phase " + globalPhase.name)
+          profiler.startCPUProfiling(ProfilingModes.CPU_SAMPLING, "", Controller.DEFAULT_WALLTIME_SPEC)
+        }
+          
         globalPhase.run
+
+        if (settings.Yprofile.contains(globalPhase.name)) {
+          profiler.captureSnapshot(ProfilingModes.SNAPSHOT_WITHOUT_HEAP)
+          profiler.stopCPUProfiling
+        }
+
+
         if (settings.Xprint contains globalPhase.name)
           if (settings.writeICode.value && globalPhase.id >= icodePhase.id) writeICode()
           else if (settings.Xshowtrees.value) nodePrinters.printAll() 
@@ -734,6 +751,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         if (settings.printLate.value && globalPhase.name == "cleanup")
           printAllUnits()
         
+
         if (settings.browse contains globalPhase.name) treeBrowser.browse(units)
         informTime(globalPhase.description, startTime)
         globalPhase = globalPhase.next

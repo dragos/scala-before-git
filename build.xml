@@ -378,6 +378,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       <pathelement location="${lib.dir}/fjbg.jar"/>
       <pathelement location="${lib.dir}/msil.jar"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
+      <pathelement location="${lib.dir}/yjp-controller-api-redist.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
   </target>
@@ -567,7 +568,7 @@ QUICK BUILD (QUICK)
       compilerpathref="locker.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/compiler"
-      jvmargs="${scalacfork.jvmargs}">
+      jvmargs="${scalacfork.jvmargs} -Xloggc:quick-comp.gc">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -576,9 +577,11 @@ QUICK BUILD (QUICK)
         <pathelement location="${msil.jar}"/>
         <pathelement location="${forkjoin.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${lib.dir}/yjp-controller-api-redist.jar"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
+    <stopwatch name="quick.comp.timer" action="total"/>
     <propertyfile file="${build-quick.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -595,7 +598,6 @@ QUICK BUILD (QUICK)
       </fileset>
     </copy>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
-    <stopwatch name="quick.comp.timer" action="total"/>
   </target>
 
   <target name="quick.pre-plugins" depends="quick.comp">
@@ -782,6 +784,7 @@ QUICK BUILD (QUICK)
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${msil.jar}"/>
       <pathelement location="${forkjoin.jar}"/>
+      <pathelement location="${lib.dir}/yjp-controller-api-redist.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
   </target>
