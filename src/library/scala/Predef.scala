@@ -71,10 +71,15 @@ object Predef extends LowPriorityImplicits {
    *  @see elidable
    *  @param p   the expression to test
    */
-  @elidable(ASSERTION)
+/*  @elidable(ASSERTION)
   def assert(assertion: Boolean) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
+  }*/
+
+  @inline def assert(cond: => Boolean) {
+    if (assertionsEnabled && !cond)
+      throw new AssertionError("assertion failed")
   }
 
   /** Tests an expression, throwing an AssertionError if false.
@@ -85,11 +90,19 @@ object Predef extends LowPriorityImplicits {
    *  @param p   the expression to test
    *  @param msg a String to include in the failure message
    */
-  @elidable(ASSERTION)
-  def assert(assertion: Boolean, message: => Any) {
-    if (!assertion)
-      throw new java.lang.AssertionError("assertion failed: "+ message)
+  // @elidable(ASSERTION)
+  // def assert(assertion: Boolean, message: => Any) {
+  //   if (!assertion)
+  //     throw new java.lang.AssertionError("assertion failed: "+ message)
+  // }
+
+  var assertionsEnabled = true
+
+  @inline def assert(cond: => Boolean, message: => Any) {
+    if (assertionsEnabled && !cond)
+      throw new AssertionError("assertion failed: " + message)
   }
+
 
   /** Tests an expression, throwing an AssertionError if false.
    *  This method differs from assert only in the intent expressed:
