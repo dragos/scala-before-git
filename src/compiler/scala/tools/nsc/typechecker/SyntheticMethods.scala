@@ -222,6 +222,15 @@ trait SyntheticMethods extends ast.TreeDSL {
       typer typed (DEF(method) === REF(clazz.sourceModule))
     }
 
+    /** Return a clone implementation that always throws
+     * 'CloneNotSupportedException'
+     */
+    def cloneMethod: Tree = {
+      val method = clazz.newMethod(clazz.pos, nme.clone_)
+      method.setInfo(MethodType(Nil, definitions.ObjectClass.tpe))
+      typer.typed(DEF(method) === THROW (definitions.CloneNotSupportedException))
+    }
+
     def newAccessorMethod(tree: Tree): Tree = tree match {
       case DefDef(_, _, _, _, _, rhs) =>
         var newAcc = tree.symbol.cloneSymbol
@@ -304,6 +313,14 @@ trait SyntheticMethods extends ast.TreeDSL {
          */
         if (hasSerializableAnnotation(clazz) && !hasImplementation(nme.readResolve))
           ts += readResolveMethod
+
+        if (clazz.hasAnnotation(definitions.CloneableAttr) || clazz.isSubClass(definitions.CloneableClass)) {
+          val cloneMeth = clazz.info.decl(nme.clone_)
+          if (cloneMeth == NoSymbol)
+            ts += cloneMethod
+          else
+            context.unit.warning(cloneMeth.pos, "Scala objects should not be cloned.")
+        }
       }
     } catch {
       case ex: TypeError =>

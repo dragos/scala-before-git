@@ -112,6 +112,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
                                                        else           "java.lang.reflect.InvocationTargetException")
     // java is hard coded because only used by structural values
     lazy val NoSuchMethodExceptionClass     = getClass("java.lang.NoSuchMethodException")
+    lazy val CloneNotSupportedException = getClass("java.lang.CloneNotSupportedException")    
     
     // annotations
     lazy val AnnotationClass            = getClass("scala.Annotation")
@@ -133,6 +134,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
     lazy val ScalaInlineClass           = getClass("scala.inline")
     lazy val ScalaNoInlineClass         = getClass("scala.noinline")
+    lazy val CloneableAttr        = getClass("scala.cloneable")    
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
@@ -165,6 +167,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val TypeConstraintClass  = getClass("scala.TypeConstraint")
     lazy val SingletonClass       = newClass(ScalaPackageClass, nme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass    = getClass(sn.Serializable)
+    lazy val CloneableClass       = getClass("java.lang.Cloneable")
     lazy val ComparableClass      = getClass("java.lang.Comparable")
     
     lazy val RepeatedParamClass = newCovariantPolyClass(
