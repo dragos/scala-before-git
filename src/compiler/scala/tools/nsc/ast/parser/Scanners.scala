@@ -784,7 +784,7 @@ trait Scanners {
             
             /** Backquoted idents like 22.`foo`. */
             case '`' =>
-              return setStrVal()  /** Note the early return **/
+              return setStrVal()  /** Note the early return */
 
             /** These letters may be part of a literal, or a method invocation on an Int */
             case 'd' | 'D' | 'f' | 'F' =>

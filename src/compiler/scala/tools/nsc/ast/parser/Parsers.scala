@@ -1812,7 +1812,7 @@ self =>
         var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName) {
           mods = modifiers() | Flags.PARAMACCESSOR
-          if (mods.hasFlag(Flags.LAZY)) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
+//          if (mods.hasFlag(Flags.LAZY)) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
           if (in.token == VAL) {
             mods = mods withPosition (in.token, tokenRange(in))
             in.nextToken() 
@@ -1829,6 +1829,10 @@ self =>
           if (caseParam) {
             mods |= Flags.CASEACCESSOR
           }
+        }
+        if (in.token == LAZY) {
+          accept(LAZY)
+          mods = mods | Flags.LAZY
         }
         val nameOffset = in.offset
         val name = ident()
@@ -2235,7 +2239,7 @@ self =>
                       accept(EQUALS)
                       atPos(in.offset) { constrExpr(vparamss) }
                     }
-          DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
+          lazyParamDesugar(DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs))
         }
       } else {
         var newmods = mods
@@ -2267,7 +2271,7 @@ self =>
             } else {
               equalsExpr()
             }
-          DefDef(newmods, name, tparams, vparamss, restype, rhs)
+           lazyParamDesugar(DefDef(newmods, name, tparams, vparamss, restype, rhs))
         }
       }
     }

@@ -59,6 +59,36 @@ abstract class TreeBuilder {
     }
   }
 
+  def lazyParamDesugar(tree: Tree): Tree = {
+    val valdefs: ListBuffer[Tree] = new ListBuffer
+    tree match {
+      case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        val newVparamss = 
+          for (vparams <- vparamss) yield
+            (for (vparam <- vparams) yield vparam match {
+              case ValDef(mods, name, tpt, rhs) if mods.hasFlag(LAZY) =>
+                println("lazy param: " + vparam)
+                valdefs += ValDef(mods, name, tpt, Ident(this.lazyName(name)))
+                ValDef(mods &~ LAZY, this.lazyName(name), toByNameParam(tpt), rhs)
+              case v => v
+            })
+        if (valdefs.isEmpty) 
+          tree
+        else
+          DefDef(mods, name, tparams, newVparamss, tpt, Block(valdefs.toList, rhs))
+
+      case d => d
+    }
+  }
+  private def lazyName(name: Name): Name = newTermName(name.toString + "$l")
+
+  // TODO: take care if the lazy param is already call-by-name!
+  private def toByNameParam(tpt: Tree): Tree = 
+    AppliedTypeTree(
+      scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(tpt))
+
+
+
   /** Traverse pattern and collect all variable names with their types in buffer
    *  The variables keep their positions; whereas the pattern is converted to be synthetic
    *  for all nodes that contain a variable position.

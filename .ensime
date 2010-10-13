@@ -1,0 +1,17 @@
+;; This config was generated using ensime-config-gen. Feel free to customize its contents manually. 
+
+(
+
+:project-name "Scala"
+
+:server-root "/Users/dragos/emacs/ensime"
+
+:project-package "scala.tools.nsc"
+
+:sources ("./src/compiler" "./src/library")
+
+:compile-jars ("./lib")
+
+:target "./build/quick/classes"
+
+)
