@@ -583,6 +583,9 @@ abstract class GenICode extends SubComponent  {
       resCtx
     }
 
+    def isRefClassCtor(sym: Symbol) = {
+      definitions.refClass.values.toSet(sym.owner) && sym.isConstructor
+    }
 
     /**
      * Generate code for trees that produce values on the stack
@@ -808,6 +811,16 @@ abstract class GenICode extends SubComponent  {
                 ctx.bb.emit(DUP(generatedType))
                 val ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
 
+                if (isRefClassCtor(fun.symbol) && settings.Xdce.value) {
+                  // we store this boxed value to a local, even if not really needed.
+                  // boxing optimization might use it, and dead code elimination will 
+                  // take care of unnecessary stores
+                  println("added ref tmp")
+                  var loc1 = ctx.makeLocal(tree.pos, ctor.info.paramTypes(0), "ref")
+                  ctx1.bb.emit(STORE_LOCAL(loc1))
+                  ctx1.bb.emit(LOAD_LOCAL(loc1))
+                }
+
                 val init = CALL_METHOD(ctor, Static(true))
                 nw.init = init
                 ctx1.bb.emit(init, tree.pos)
@@ -842,7 +855,7 @@ abstract class GenICode extends SubComponent  {
           generatedType = boxType
           ctx1.bb.emit(UNBOX(boxType), expr.pos)
           ctx1
-
+          
         case Apply(fun @ _, List(expr)) if (forMSIL && loaders.clrTypes.isAddressOf(fun.symbol)) =>
           debuglog("ADDRESSOF : " + fun.symbol.fullName);
           val ctx1 = msil_genLoadAddressOf(expr, ctx, toTypeKind(expr.tpe), butRawValueIsAlsoGoodEnough = false)

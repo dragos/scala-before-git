@@ -40,10 +40,9 @@ import annotation.bridge
  *         and its complexity is O(1).
  */
 @SerialVersionUID(7618862778670199309L)
-class Range(val start: Int, val end: Int, val step: Int)
+case class Range(val start: Int, val end: Int, val step: Int)
 extends IndexedSeq[Int]
    with collection.CustomParallelizable[Int, ParRange]
-   with Serializable
 {
   override def par = new ParRange(this)
 
@@ -251,7 +250,7 @@ object Range {
       NumericRange.count[Long](start, end, step, isInclusive)
   }
 
-  class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+  final class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)
     override def isInclusive = true
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
@@ -260,7 +259,7 @@ object Range {
   /** Make a range from `start` until `end` (exclusive) with given step value.
    * @note step != 0
    */
-  def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
+//  def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Make an range from `start` to `end` inclusive with step value 1.
    */
